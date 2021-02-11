@@ -1184,6 +1184,18 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		return;
 	}
 
+	// See what type of product we are adding
+	var type = s.getPropertyValue("ProductType", job);
+	if (isEmpty(type)) {
+		type = "Flat";
+	}
+	json.add("type", type);
+
+	// Add all tiling params if tiled product
+	if (type === "Tiled") {
+		addTiling(s, job, json);
+	}
+
 	// Get multipage handling option for this artwork
 	var multipage = s.getPropertyValue("PageHandling", job);
 	var pageHandling = "OnePerFile";
@@ -1359,6 +1371,81 @@ function importCsv(s : Switch, job : Job, id : String, status) {
 	http.setAttachedFile(json.path());
 	var response = post(s, job, http, "Import CSV");
 	status.handleResponse(response, "Import CSV");
+}
+
+// Add tiling options to add artwork JSON request entity
+function addTiling(s : Switch, job : Job, json : Json) {
+	// Get tiling methods in both directions
+	var hRule = s.getPropertyValue("TilingH", job);
+	var vRule = s.getPropertyValue("TilingV", job);
+
+	// If both methods are none then no tiling happening so just warn and return
+	if (hRule === "None" && vRule === "None") {
+		job.log(2, "Horizontal and vertical tiling both set to \"None\", no " +
+				"tiling will be performed");
+		return;
+	}
+
+	// Start tiling entity and set tiling order fields
+	json.startField("tiling");
+	json.startDict();
+	json.add("type", "StandardTiling");
+	json.addEnumProperty("TilingStart", "start");
+	json.addEnumProperty("TilingOrder", "order");
+
+	// Add horizontal and vertical tiling rules
+	addTilingRule("horizontal", hRule, s, job, json);
+	addTilingRule("vertical", vRule, s, job, json);
+	json.endDict();
+}
+
+// Add tiling rule in single direction
+function addTilingRule(dimension : String, rule : String, s : Switch,
+					   job : Job, json : Json) {
+
+	if (rule === "None") {
+		return;
+	}
+
+	// Set property tag postfix
+	var postfix = dimension.left(1).upper();
+
+	// Add tiling rule entity
+	json.startField(dimension + "-rule");
+	json.startDict();
+	if (rule === "Fixed number") {
+		json.add("type", "FixedNumber");
+		json.addProperty("TilingNumber" + postfix, "number");
+		json.addYesNoProperty("TilingUniform" + postfix, "uniform-final-size");
+	} else if (rule === "Fixed size") {
+		json.add("type", "FixedSize");
+		json.addProperty("TilingSize" + postfix, "size");
+	} else if (rule === "Variable sizes") {
+		json.add("type", "VariableSizes");
+		json.addArrayProperty("TilingSizes" + postfix, "sizes");
+	} else {
+		job.log(2, "Tiling rule value invalid in the " + dimension + " dimension");
+	}
+	json.endDict();
+
+	// Add tiling method entity
+	var method = s.getPropertyValue("TilingMethod" + postfix, job);
+	if (method !== "None") {
+		json.startField(dimension + "-method");
+		json.startDict();
+		var method = s.getPropertyValue("TilingMethod" + postfix, job);
+		json.add("type", method);
+		if (method === "Gap") {
+			json.addProperty("TilingGapSize" + postfix, "gap");
+			json.addProperty("TilingGapExtension" + postfix, "extension");
+			json.addEnumProperty("TilingGapExtensionRule" + postfix, "extension-rule");
+		} else {
+			json.addEnumProperty("TilingOverlapRule" + postfix, "overlap-rule");
+			json.addProperty("TilingOverlapSize" + postfix, "overlap");
+			json.addProperty("TilingOverlapNoImage" + postfix, "no-image");
+		}
+		json.endDict();
+	}
 }
 
 function plan(s : Switch, job : Job, id : String, status) {
@@ -2287,6 +2374,18 @@ class Json {
 		this.writeText(value);
 	}
 
+	// Add yes/no entry as true/false boolean
+	function addYesNo(field, yesNo) {
+		var value = "false";
+		var ret = false;
+		if (yesNo === "Yes") {
+			value = "true";
+			ret = true;
+		}
+		this.add(field, value);
+		return ret;
+	}
+
 	function addProperty(tagName, field, isPercent) {
 		var value = this.propertyValue(tagName, null);
 		if (!isEmpty(value)) {
@@ -2295,6 +2394,19 @@ class Json {
 			}
 			this.add(field, value);
 		}
+	}
+
+	// Add yes/no property as name/value entry
+	function addYesNoProperty(tagName : String, field : String) {
+		var yesNo = this.propertyValue(tagName, null);
+		return this.addYesNo(field, yesNo);
+	}
+
+	// Add enum value combining and capitalizing value to form expected value
+	function addEnumProperty(tagName : String, field : String,
+					  connection : Connection) {
+		var value = this.enumValue(tagName, connection);
+		this.add(field, value);
 	}
 
 	function addArrayProperty(tagName, field) {
@@ -2333,6 +2445,26 @@ class Json {
 			value = connection.getPropertyValue(tagName);
 		} else {
 			value = _switch.getPropertyValue(tagName, _job);
+		}
+		return value;
+	}
+
+	// convert user friendly dropdown text to REST entity enum value
+	function enumValue(tagName : String, connection : Connection) {
+		var value = this.propertyValue(tagName, connection);
+		if (!isEmpty(value)) {
+			// Split user friendly dropdown value by spaces
+			var words = value.split(" ");
+			if (words.length > 1) {
+				//Capitalize 2nd and subsequent words to form enum value
+				var combined = words[0];
+				for (var i = 1; i < words.length; i++) {
+					var word = words[i];
+					var first = word.left(1);
+					combined += first.upper() + word.right(word.length - 1);
+				}
+				value = combined;
+			}
 		}
 		return value;
 	}
