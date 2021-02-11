@@ -1201,6 +1201,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 
 	// See what type of product we are adding
 	var type = s.getPropertyValue("ProductType", job);
+	var pageHandling = "OnePerFile";
 	if (isEmpty(type)) {
 		type = "Flat";
 	}
@@ -1260,11 +1261,10 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		json.addArrayProperty("FoldingPattern", "folding-patterns");
 		json.addProperty("PageBleed", "page-bleed");
 	} else {
-		// Flat and tiled product type case
-
-		// Get multipage handling option for this artwork
+		// Flat and tiled product type case, get multipage handling option for
+		// this artwork
 		var multipage = s.getPropertyValue("PageHandling", job);
-		var pageHandling = "OnePerFile";
+
 		if (multipage === "One product per page") {
 			pageHandling = "OnePerPage";
 			json.addProperty("FrontToBack", "front-to-back");
