@@ -23,7 +23,7 @@ var XmlReportAction = {
 // and REST API method URL
 var ExportActions = [
 	{
-		"name" : "Save Job",
+		"name" : "Save Project",
 		"option" : "IncludePhoenixJob",
 		"method" : "/save",
 		"postfix" : null,
@@ -55,12 +55,52 @@ var ExportActions = [
 		"preset" : "ExportPdfDiePreset"
 	},
 	{
+		"name" : "Export CF2 Die",
+		"option" : "IncludeCf2Die",
+		"method" : "/export/die/cff2",
+		"postfix" : null,
+		"extension" : "cf2",
+		"preset" : "ExportCf2Preset"
+	},
+	{
+		"name" : "Export DXF Die",
+		"option" : "IncludeDxfDie",
+		"method" : "/export/die/dxf",
+		"postfix" : null,
+		"extension" : "dxf",
+		"preset" : "ExportDxfPreset"
+	},
+	{
+		"name" : "Export ZCC",
+		"option" : "IncludeZcc",
+		"method" : "/export/die/zcc",
+		"postfix" : null,
+		"extension" : "zcc",
+		"preset" : "ExportZccPreset"
+	},
+	{
+		"name" : "Export Vector Separation",
+		"option" : "IncludeVectorSeparation",
+		"method" : "/export/pdf-vector",
+		"postfix" : "-vector",
+		"extension" : "pdf",
+		"preset" : "ExportVectorPreset"
+	},
+	{
 		"name" : "Export Cover Sheet",
 		"option" : "IncludeCoverSheet",
 		"method" : "/export/cover-sheet",
 		"postfix" : "-cover",
 		"extension" : "pdf",
 		"preset" : "CoverSheetPreset"
+	},
+	{
+		"name" : "Export Tiling Report",
+		"option" : "IncludeTilingReport",
+		"method" : "/export/tiling-report",
+		"postfix" : "-tiling",
+		"extension" : "pdf",
+		"preset" : "ExportTilingReportPreset"
 	},
 	{
 		"name" : "Export PDF Report",
@@ -98,7 +138,9 @@ var LibPropsToMethods = {
 	"ExportXmlReportPreset" : "presets/export/report/xml",
 	"ExportJsonReportPreset" : "presets/export/report/json",
 	"GangingProfile" : "presets/ganging/profiles",
-	"CuttingJdfPreset" : "presets/export/jdf-cutting"
+	"CuttingJdfPreset" : "presets/export/jdf-cutting",
+	"ExportCf2Preset" : "presets/export/die/cff2",
+	"ExportVectorPreset" : "presets/export/pdf-vector"
 }
 
 // Per-layout and per-surface export postfix formats used to detect what
