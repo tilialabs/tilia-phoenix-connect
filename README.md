@@ -21,8 +21,8 @@ tilia Phoenix and tilia Phoenix Connect are developed by [Tilia Labs](https://ti
 ## Prerequisites
 
 To run this app, you will need:
-1. A licensed copy of Enfocus Switch 2017 update 1 or newer
-2. A licensed copy of tilia Phoenix 7.0 or newer with the Automate module
+1. A licensed copy of tilia Phoenix 7.0 or newer with the Automate module
+2. A licensed copy of Enfocus Switch 2017 update 1 or newer
 
 In order to make modifications to this app you will need the Switch Scriptor tool from Enfocus.
 
