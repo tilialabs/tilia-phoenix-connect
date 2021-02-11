@@ -1,4 +1,4 @@
-# tilia-phoenix-connect
+# tilia Phoenix Connect
 
 tilia Phoenix Connect is a free, open source app for Enfocus Switch available on the Enfocus App Store:
 https://www.enfocus.com/en/appstore/product/tilia-phoenix-connect
@@ -15,6 +15,8 @@ A total of 13 export formats are supported to drive your press and finishing dev
 - PDF-based cover sheets
 - Tiling reports
 - Phoenix project files
+
+tilia Phoenix and tilia Phoenix Connect are developed by [Tilia Labs](https://tilialabs.com).
 
 ## Prerequisites
 
