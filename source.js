@@ -1293,13 +1293,7 @@ function addProduct(s : Switch, job : Job, id : String, frontPage,
 	var spacingType = s.getPropertyValue("ProductSpacingType", job);
 	if (spacingType === "Margins") {
 		json.add("spacing-type", "Margins");
-		json.startField("spacing-margins");
-		json.startDict();
-		json.addProperty("ProductSpacingTop", "top", false);
-		json.addProperty("ProductSpacingBottom", "bottom", false);
-		json.addProperty("ProductSpacingRight", "right", false);
-		json.addProperty("ProductSpacingLeft", "left", false);
-		json.endDict();
+		json.addMargins("ProductSpacing", "spacing-margins");
 	} else if (spacingType === "Contour") {
 		json.add("spacing-type", "Uniform");
 		json.addProperty("ProductSpacing", "spacing-margin", false);
@@ -1311,13 +1305,7 @@ function addProduct(s : Switch, job : Job, id : String, frontPage,
 	var bleedType = s.getPropertyValue("ProductBleedType", job);
 	if (bleedType === "Margins") {
 		json.add("bleed-type", "Margins");
-		json.startField("bleed-margins");
-		json.startDict();
-		json.addProperty("ProductBleedTop", "top", false);
-		json.addProperty("ProductBleedBottom", "bottom", false);
-		json.addProperty("ProductBleedRight", "right", false);
-		json.addProperty("ProductBleedLeft", "left", false);
-		json.endDict();
+		json.addMargins("ProductBleed", "bleed-margins");
 	} else if (bleedType === "Contour") {
 		// Set bleed offset if not Default
 		var bleed = s.getPropertyValue("ProductBleed", job);
@@ -1327,6 +1315,12 @@ function addProduct(s : Switch, job : Job, id : String, frontPage,
 		}
 	} else if (bleedType === "None") {
 		json.add("bleed-type", "None");
+	}
+
+	// Set offcut margins if needed
+	var offcut = s.getPropertyValue("Offcut", job);
+	if (offcut === "Margins") {
+		json.addMargins("Offcut", "offcut-margins");
 	}
 
 	// Add rotation properties
@@ -2354,6 +2348,17 @@ class Json {
 			this.writeText(values[i]);
 		}
 		this.endArray();
+	}
+
+	// Add margins entity field
+	function addMargins(tagPrefix, name) {
+	  this.startField(name);
+		this.startDict();
+		this.addProperty(tagPrefix + "Left", "left");
+		this.addProperty(tagPrefix + "Top", "top");
+		this.addProperty(tagPrefix + "Right", "right");
+		this.addProperty(tagPrefix + "Bottom", "bottom");
+		this.endDict();
 	}
 
 	// Get property value from connection if passed in or from switch + job
