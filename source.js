@@ -1,6 +1,6 @@
-// Phoenix Plan Configurator
+// tilia Phoenix Switch app
 //
-// Version: 5.3
+// Version: 1.0 (Plan Configurator 6.0)
 //
 // Tilia Labs Inc.
 // Copyright (c) 2015-*, All Rights Reserved
@@ -128,6 +128,7 @@ var LibPropsToMethods = {
 	"Templates" : "libraries/templates",
 	"ProductTemplates" : "libraries/templates",
 	"Marks" : "libraries/marks",
+	"BackMarks" : "libraries/marks",
 	"DieDesignName" : "libraries/diedesigns",
 	"CsvImportPreset" : "presets/import/product/csv",
 	"ExportJdfPreset" : "presets/export/jdf",
@@ -377,7 +378,8 @@ function getLibraryForProperty(s : Switch, tag : String) {
 				s.log(-1, "Asset: " + item.name);
 
 				// TODO: Stop restricting to product marks when other anchors supported
-				if (tag !== "Marks" || ("anchor" in item && item.anchor === "Product")) {
+				if ((tag !== "Marks" && tag !== "BackMarks") ||
+					("anchor" in item && item.anchor === "Product")) {
 					names.push(item.name);
 				}
 			}
@@ -1340,6 +1342,10 @@ function addProduct(s : Switch, job : Job, id : String, frontPage,
 	json.addArrayProperty("FrontInks", "front-inks");
 	json.addArrayProperty("BackInks", "back-inks");
 
+	// Add front and back marks
+	json.addArrayProperty("Marks", "marks");
+	json.addArrayProperty("BackMarks", "back-marks");
+
 	// Set priority if needed
 	var priority = s.getPropertyValue("ProductPriority", job);
 	if (!isEmpty(priority) && priority !== "Default") {
@@ -1366,8 +1372,6 @@ function addProduct(s : Switch, job : Job, id : String, frontPage,
 		for (var i = 0; i < resources.length; i++) {
 			artworkState.addMapping(resources[i], frontPage);
 		}
-
-		applyMarksToProduct(s, job, id, status);
 	}
 }
 
@@ -1396,52 +1400,6 @@ function importCsv(s : Switch, job : Job, id : String, status) {
 	http.setAttachedFile(json.path());
 	var response = post(s, job, http, "Import CSV");
 	status.handleResponse(response, "Import CSV");
-}
-
-function applyMarksToProduct(s : Switch, job : Job, id, status) {
-	// See if marks have been defined for this product
-	var marks = multiValues(s, job, "Marks");
-	if (marks == null) {
-		return;
-	}
-
-	var resources = status.resources();
-	if (resources.length == 1) {
-		// Get final name of product from resources list in response as Phoenix
-		// could have renamed due to name collision
-		var resource = HTTP.decodeURI(resources[0]);
-		var index = resource.lastIndexOf("/");
-		if (index > 0) {
-			var name = resource.substring(index + 1, resource.length);
-
-			for (var i = 0; i < marks.length; i++) {
-				var mark = marks[i];
-				if (!isEmpty(mark)) {
-					// Create apply mark request on this product
-					var json = new Json(s, job);
-					json.add("name", mark);
-					json.commit();
-
-					var method = "jobs/" + id + "/products/" + name + "/marks/apply";
-					var http = phoenixConnect(s, method, "application/json", "Entity");
-					http.setAttachedFile(json.path());
-
-					var rsp = post(s, job, http, "Apply Mark");
-					status.handleResponse(rsp, "Apply mark");
-					job.log(-1, "Apply mark result %1", rsp);
-					if (!status.success()) {
-						job.log(2, "Applying marks to product failed in Phoenix");
-						return;
-					}
-				}
-			}
-		} else {
-			job.log(2, "Applying marks to product failed, unexpected resource format");
-		}
-	} else {
-		job.log(2, "Applying marks to product failed, unexpected resource length: %1",
-				resources.length);
-	}
 }
 
 function plan(s : Switch, job : Job, id : String, status) {
