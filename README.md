@@ -36,7 +36,7 @@ For more information on how to run tilia Phoenix in automated environments inclu
 
 This application and all code herein is open sourced under the Apache 2.0 license.  You are free to customize this app as a script and use your modifications for commercial purposes with or without publishing your changes.
 
-Tilia Labs is the sole maintainer of this repository, but we encourage suggestions and pull requests to help make this app better than ever for our global graphics arts community!
+Tilia Labs is the sole maintainer of this repository, but we encourage suggestions and pull requests to help make this app better than ever for our global graphic arts community!
 
 ## Coding guidelines
 
