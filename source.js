@@ -1472,7 +1472,29 @@ function addGradeItems(json, name : String, selectMode : String,
 }
 
 function applyBest(s : Switch, job : Job, id : String, status) {
-	var method = "jobs/" + id + "/plan/results/1/apply";
+	// Get best plan result, i.e. lowest cost
+	var method = "jobs/" + id + "/plan/results?limit=1";
+	var http = phoenixConnect(s, method, "application/json", "None");
+	var response = get(s, job, http, "Get Best Plan Result");
+	if (response == null) {
+		status.recordProcessFail("Getting plan results failed");
+		return;
+	}
+
+	// Convert JSON text into JS object
+	var results = eval(response);
+	if (results.length == 0) {
+		status.recordError("No plan results found, please review planning " +
+						   "warnings.  You might need to increase allowed planning time");
+		return;
+	}
+
+	// Get ID of best result
+	var planId = results[0].id;
+	job.log(1, "Applying best plan (ID %1)", planId);
+
+	// Apply this plan to the current job
+	var method = "jobs/" + id + "/plan/results/" + planId + "/apply";
 	var http = phoenixConnect(s, method, "application/json", "None");
 
 	// Wait indefinitely, applying plans can take a long time if hundreds or
