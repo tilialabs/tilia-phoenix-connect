@@ -1270,15 +1270,18 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		json.addArrayProperty("FoldingPattern", "folding-patterns");
 		json.addProperty("PageBleed", "page-bleed");
 	} else {
-		// Flat and tiled product type case, get multipage handling option for
-		// this artwork
-		var multipage = s.getPropertyValue("PageHandling", job);
+		// Flat and tiled product type case
+		pageHandling = "OnePerPage";
+		if (type === "Flat") {
+			// Get multipage handling option and front to back mirroring
+			var multipage = s.getPropertyValue("PageHandling", job);
 
-		if (multipage === "One product per page") {
-			pageHandling = "OnePerPage";
-			json.addProperty("FrontToBack", "front-to-back");
-		} else if (multipage === "One product per two pages") {
-			pageHandling = "OnePerTwoPages";
+			if (multipage === "One product per page") {
+				pageHandling = "OnePerPage";
+				json.addProperty("FrontToBack", "front-to-back");
+			} else if (multipage === "One product per two pages") {
+				pageHandling = "OnePerTwoPages";
+			}
 		}
 		json.add("page-handling", pageHandling);
 		json.addProperty("ShapeHandling", "shape-handling");
@@ -1370,9 +1373,16 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		}
 	}
 
-	// Add front and back inks
-	json.addArrayProperty("FrontInks", "front-inks");
-	json.addArrayProperty("BackInks", "back-inks");
+	// Add specified page colors and back colors for flat work
+	var specified = addColors(json, "FrontInks", "colors");
+	if (type === "Flat" && addColors(json, "BackInks", "back-colors")) {
+		specified = true;
+	}
+
+	// Flag color source as specified if colors were explicitly defined
+	if (specified) {
+		json.add("color-source", "Specified");
+	}
 
 	// Add front and back marks
 	json.addArrayProperty("Marks", "marks");
@@ -1385,40 +1395,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	}
 
 	// Add custom properties which are defined as name=value pairs
-	var propPairs = multiValues(s, job, "CustomProperties");
-	if (propPairs != null) {
-		var started = false;
-		for (var i = 0; i < propPairs.length; i++) {
-			var pair = propPairs[i];
-
-			if (PropNameValueRegex.exactMatch(pair)) {
-				var name = PropNameValueRegex.cap(1);
-				var value = PropNameValueRegex.cap(2);
-
-				// Start properties array if needed
-				if (!started) {
-					json.startArray("properties");
-					started = true;
-				} else {
-					json.addArraySeparator();
-				}
-
-				// Add custom property entry which defaults to Text when type not set
-				json.startDict();
-				json.add("name", name);
-				json.add("value", value);
-				json.endDict();
-			} else {
-				job.log(2, "Invalid custom property format: '%1', expected " +
-						"format for each property is NAME=VALUE", pair);
-			}
-		}
-
-		// End properties array if needed
-		if (started) {
-			json.endArray();
-		}
-	}
+	addCustomProperties(json);
 
 	json.commit();
 
@@ -1551,6 +1528,69 @@ function addTilingRule(dimension : String, rule : String, s : Switch,
 			json.addProperty("TilingOverlapNoImage" + postfix, "no-image");
 		}
 		json.endDict();
+	}
+}
+
+function addColors(json : Json, tagName: String, field: String) {
+	// Add list of color entities to add product request
+	var colors = multiValues(json.s(), json.job(), tagName);
+	if (colors == null) {
+		return false;
+	}
+
+	json.startArray(field);
+	for (var i = 0; i < colors.length; i++) {
+		// Add comma separator for subsequent entries
+		if (i > 0) {
+			json.addArraySeparator();
+		}
+
+		// Add color entry assuming CMYK and Printing process
+		json.startDict();
+		json.add("name", colors[i]);
+		json.add("type", "CMYK");
+		json.add("process", "Printing");
+		json.endDict();
+	}
+	json.endArray();
+
+	return true;
+}
+
+function addCustomProperties(json: Json) {
+	var propPairs = multiValues(json.s(), json.job(), "CustomProperties");
+	if (propPairs != null) {
+		var started = false;
+		for (var i = 0; i < propPairs.length; i++) {
+			var pair = propPairs[i];
+
+			if (PropNameValueRegex.exactMatch(pair)) {
+				var name = PropNameValueRegex.cap(1);
+				var value = PropNameValueRegex.cap(2);
+
+				// Start properties array if needed
+				if (!started) {
+					json.startArray("properties");
+					started = true;
+				} else {
+					json.addArraySeparator();
+				}
+
+				// Add custom property entry which defaults to Text when type not set
+				json.startDict();
+				json.add("name", name);
+				json.add("value", value);
+				json.endDict();
+			} else {
+				job.log(2, "Invalid custom property format: '%1', expected " +
+						"format for each property is NAME=VALUE", pair);
+			}
+		}
+
+		// End properties array if needed
+		if (started) {
+			json.endArray();
+		}
 	}
 }
 
