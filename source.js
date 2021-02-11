@@ -1,4 +1,4 @@
-[]// tilia Phoenix Switch app
+// tilia Phoenix Switch app
 //
 // Version: 1.0 (Plan Configurator 6.0)
 //
@@ -1546,6 +1546,11 @@ function addColors(json : Json, tagName: String, field: String) {
 		}
 
 		// Add color entry assuming CMYK and Printing process
+
+		// NOTE: This name list format is limiting and currently does not
+		// support entering color values ("values": [100, 56, 0, 0]) or
+		// non-printing colors.  It might make sense to add a more advanced
+		// mode where colors can be defined as JSON or XML.
 		json.startDict();
 		json.add("name", colors[i]);
 		json.add("type", "CMYK");
@@ -1558,6 +1563,11 @@ function addColors(json : Json, tagName: String, field: String) {
 }
 
 function addCustomProperties(json: Json) {
+	// NOTE: The current format (PROP1=VAL1,PROP2=VAL2,...) is fairly easy to
+	// use but doesn't support non-text properties like numbers, dates, and
+	// lists.  In the future it might make sense to have a more advanced custom
+	// property mode as well where properties can be defined as JSON or XML for
+	// example (similar to colors above).
 	var propPairs = multiValues(json.s(), json.job(), "CustomProperties");
 	if (propPairs != null) {
 		var started = false;
