@@ -4,7 +4,7 @@
         <Name Type="string" Editor="hide">PhoenixConnect</Name>
         <DisplayName Type="string" Editor="hide">tilia Phoenix Connect</DisplayName>
         <Version Type="number" Editor="hide">1</Version>
-        <Keywords Type="string" Editor="hide">imposition, planning, estimating, ganging</Keywords>
+        <Keywords Type="string" Editor="hide">Planning,Imposition,Estimating,Wide Format,Packaging,Labels,Commercial,Bound,Books,Tiling,Tile Reports,Saddle Stitch,N-up,Creep,Smyth Sewn,Section Stitch,Folding Patterns,Die,Templates,Web,Offset,Ganging,JDF,CF2,DXF</Keywords>
         <Tooltip Type="string" Editor="hide">tilia Phoenix Connect app</Tooltip>
         <IncomingConnections Editor="hide" RequireAtLeastOne="Yes">Yes</IncomingConnections>
         <OutgoingConnections Editor="hide" DetailedInfo="" RequireAtLeastOne="Yes">Unlimited</OutgoingConnections>
