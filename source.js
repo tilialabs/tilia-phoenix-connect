@@ -1140,8 +1140,8 @@ function queryJobAndCreate(s : Switch, job : Job, id : String,
 		// Open Phoenix job remotely
 		http = phoenixConnect(s, "jobs/open", "application/json", "Upload");
 
-		// Allow 10 minutes to upload big files
-		http.timeOut = 600;
+		// Allow 30 minutes to upload big files
+		http.timeOut = 1800;
 		http.setAttachedFile(jobFile);
 		var response = post(s, job, http, "Open Job");
 		status.handleResponse(response, "Open Job");
@@ -1349,8 +1349,8 @@ function importCsv(s : Switch, job : Job, id : String, status) {
 	// Post import CSV request
 	var method = "jobs/" + id + "/products/import/csv";
 	var http = phoenixConnect(s, method, "application/json", "Entity");
-	// Allow 10 minutes for import to account for large numbers of heavy files
-	http.timeOut = 600;
+	// Allow 30 minutes for import to account for large numbers of heavy files
+	http.timeOut = 1800;
 	http.setAttachedFile(json.path());
 	var response = post(s, job, http, "Import CSV");
 	status.handleResponse(response, "Import CSV");
@@ -1512,9 +1512,10 @@ function performExport(s : Switch, job : Job, preset, id, action, status) {
 	// Build method URI, connect, attach JSON resource and post
 	var url = "jobs/" + id + action.method;
 	var http = phoenixConnect(s, url, "application/json", "Entity");
-	// Most exports should be done within a few seconds but allow 10 minutes for
-	// potentially slow PDF report with artwork rendering.  See PLNCFR-35
-	http.timeOut = 600;
+	// Most exports should be done within a few seconds but allow 30 minutes for
+	// potentially slow exports like PDF cover sheet export and PDF report with
+	// artwork rendering.  See PLNCFR-35
+	http.timeOut = 1800;
 	http.setAttachedFile(json.path());
 
 	var response = post(s, job, http, action.name);
@@ -1530,8 +1531,8 @@ function jobFilePath(s : Switch, job : Job, id : String, status) {
 			// Upload this file to Phoenix and use URL returned back as path
 			var method = "jobs/" + id + "/files/upload";
 			var http = phoenixConnect(s, method, "application/json", "Upload");
-			// Allow 10 minutes to upload big files
-			http.timeOut = 600;
+			// Allow 30 minutes to upload big files
+			http.timeOut = 1800;
 			http.setAttachedFile(path);
 			var response = post(s, job, http, "Upload File");
 			status.handleResponse(response, "Upload File");
