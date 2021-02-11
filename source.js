@@ -1,4 +1,4 @@
-// tilia Phoenix Switch app
+[]// tilia Phoenix Switch app
 //
 // Version: 1.0 (Plan Configurator 6.0)
 //
@@ -152,6 +152,9 @@ var LayoutPostfixRegex = /^-(\d+)(-(F|B))?\.\w+$/;
 
 // Port number validation regex (is number)
 var PortNumberRegex = /\d+/;
+
+// Custom property name value pair regex
+var PropNameValueRegex = /([^=\s]+)\s*=\s*(.+)/;
 
 // Global data tag for tracking active jobs being processed to avoid planning
 // same jobs more than once when running concurrently
@@ -1209,6 +1212,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 
 	if (type === "Bound") {
 		json.addArrayProperty("FoldingPatterns", "folding-patterns");
+
 		var bindingMethod = json.enumValue("BindingMethod");
 		json.add("binding-method", bindingMethod);
 		if (bindingMethod === "SaddleStitch") {
@@ -1216,7 +1220,12 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		}
 		json.addProperty("BindingEdge", "binding-edge");
 		json.addProperty("JogEdge", "jog-edge");
-		json.addProperty("ReadingOrder", "reading-order");
+
+		var readingOrder = s.getPropertyValue("ReadingOrder", job);
+		json.add("reading-order", readingOrder);
+		if (readingOrder === "Calendar") {
+			json.addYesNoProperty("SelfCover", "self-cover");
+		}
 		json.addProperty("PageBleed", "page-bleed");
 
 		// Add trim settings
@@ -1273,7 +1282,6 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		}
 		json.add("page-handling", pageHandling);
 		json.addProperty("ShapeHandling", "shape-handling");
-
 
 		// Add dieshape related properties
 		var dieshape = s.getPropertyValue("ProductDieshape", job);
@@ -1374,6 +1382,42 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	var priority = s.getPropertyValue("ProductPriority", job);
 	if (!isEmpty(priority) && priority !== "Default") {
 		json.add("priority", priority);
+	}
+
+	// Add custom properties which are defined as name=value pairs
+	var propPairs = multiValues(s, job, "CustomProperties");
+	if (propPairs != null) {
+		var started = false;
+		for (var i = 0; i < propPairs.length; i++) {
+			var pair = propPairs[i];
+
+			if (PropNameValueRegex.exactMatch(pair)) {
+				var name = PropNameValueRegex.cap(1);
+				var value = PropNameValueRegex.cap(2);
+
+				// Start properties array if needed
+				if (!started) {
+					json.startArray("properties");
+					started = true;
+				} else {
+					json.addArraySeparator();
+				}
+
+				// Add custom property entry which defaults to Text when type not set
+				json.startDict();
+				json.add("name", name);
+				json.add("value", value);
+				json.endDict();
+			} else {
+				job.log(2, "Invalid custom property format: '%1', expected " +
+						"format for each property is NAME=VALUE", pair);
+			}
+		}
+
+		// End properties array if needed
+		if (started) {
+			json.endArray();
+		}
 	}
 
 	json.commit();
