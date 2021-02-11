@@ -587,54 +587,14 @@ function runPlan(s : Switch, trigger : Job, jobs : Array, inputMode : String) {
 				artworkStates = [];
 
 				for (var i = 0; i < jobs.length && status.success(); i++) {
-					// First get multipage handling option for this artwork
-					var artwork = jobs[i];
-					var multipage = s.getPropertyValue("PageHandling", artwork);
-
 					// Collect all artwork indices generated for this job file to detect
 					// when all or part of the artwork cannot be placed on layouts
+					var artwork = jobs[i];
 					var artworkState = new InputJobState(artwork);
 					artworkStates.push(artworkState);
 
 					// If always creating a product per file no need to query page count
-					if (multipage === "One product per file") {
-						addProduct(s, artwork, id, null, null, null, status, artworkState);
-					} else {
-						// Get page count for artwork and add multiple products
-						var stats = new FileStatistics(artwork.getPath());
-						var pages = stats.getNumber("NumberOfPages");
-						var steps = 1;
-						if (multipage === "One product per two pages") {
-							steps = 2;
-						}
-
-
-						// Handle cases where only one product is created (no postfix needed)
-						if (pages == 1) {
-							addProduct(s, artwork, id, 1, null, null, status, artworkState);
-						} else if (pages == 2 && steps == 2) {
-							addProduct(s, artwork, id, 1, 2, null, status, artworkState);
-						} else {
-							var count = 1;
-							var postfix = s.getPropertyValue("MultipagePostfix", artwork);
-							if (!postfix) {
-								postfix = "";
-							}
-
-							for (var page = 1; page <= pages && status.success(); page += steps) {
-								var append = postfix + count.toString();
-								if (steps == 1 || page == pages) {
-									// Note: setting 0 for back page to explicitly avoid assignment
-									// since Phoenix assumes page 2 is back artwork by default
-									addProduct(s, artwork, id, page, 0, append, status, artworkState);
-								} else {
-									addProduct(s, artwork, id, page, page + 1, append, status,
-											   artworkState);
-								}
-								count++;
-							}
-						}
-					}
+					addProduct(s, artwork, id, status, artworkState);
 				}
 			}
 
@@ -1202,8 +1162,8 @@ function deletePhoenixJob(s : Switch, logger, id : String) {
 	return response != null;
 }
 
-function addProduct(s : Switch, job : Job, id : String, frontPage,
-					backPage, postfix, status, artworkState) {
+function addProduct(s : Switch, job : Job, id : String, status,
+					artworkState) {
 
 	job.log(-1, "Adding product to Phoenix job " + job.getName());
 
@@ -1215,12 +1175,6 @@ function addProduct(s : Switch, job : Job, id : String, frontPage,
 	if (isEmpty(name)) {
 		name = job.getNameProper();
 	}
-
-	// Add postfix if passed in (multiple products from multi-page artwork case)
-	if (postfix) {
-		name += postfix;
-	}
-
 	json.add("name", name);
 
 	// Add inbound job path as artwork path and check to see if job file
@@ -1229,6 +1183,16 @@ function addProduct(s : Switch, job : Job, id : String, frontPage,
 	if (!status.success()) {
 		return;
 	}
+
+	// Get multipage handling option for this artwork
+	var multipage = s.getPropertyValue("PageHandling", job);
+	var pageHandling = "OnePerFile";
+	if (multipage === "One product per page") {
+		pageHandling = "OnePerPage";
+	} else if (multipage === "One product per two pages") {
+		pageHandling = "OnePerTwoPages";
+	}
+	json.add("page-handling", pageHandling);
 
 	// Add simple product properties
 	json.addProperty("ProductOrdered", "ordered", false);
@@ -1242,14 +1206,6 @@ function addProduct(s : Switch, job : Job, id : String, frontPage,
 	json.addProperty("ProductNotes", "notes", false);
 	json.addProperty("ProductDescription", "description", false);
 	json.addArrayProperty("ProductTemplates", "templates");
-
-	// Set page numbers if passed in
-	if (frontPage != null) {
-		json.add("page", frontPage.toString());
-	}
-	if (backPage != null) {
-		json.add("back-page", backPage.toString());
-	}
 
 	// Add dieshape related properties
 	var dieshape = s.getPropertyValue("ProductDieshape", job);
@@ -1358,13 +1314,22 @@ function addProduct(s : Switch, job : Job, id : String, frontPage,
 	status.handleResponse(response, "Add Product");
 	job.log(-1, "Add product result %1", response);
 
-	// Record product name in artwork state and see if we need to add marks to
-	// this product
+	// Record product name in artwork state for place count tracking after
+	// plan has been generated and applied to this project
 	if (status.success()) {
 		// Resources will contain all added artwork URLs, parse index
 		var resources = status.resources();
+		var page = 1;
+
 		for (var i = 0; i < resources.length; i++) {
-			artworkState.addMapping(resources[i], frontPage);
+			artworkState.addMapping(resources[i], page);
+
+			// Track page number in artwork file this product came from
+			if (pageHandling === "OnePerPage") {
+				page += 1;
+			} else {
+				page += 2;
+			}
 		}
 	}
 }
