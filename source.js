@@ -141,7 +141,9 @@ var LibPropsToMethods = {
 	"GangingProfile" : "presets/ganging/profiles",
 	"CuttingJdfPreset" : "presets/export/jdf-cutting",
 	"ExportCf2Preset" : "presets/export/die/cff2",
-	"ExportVectorPreset" : "presets/export/pdf-vector"
+	"ExportVectorPreset" : "presets/export/pdf-vector",
+	"FoldingPatterns": "libraries/folding",
+		"FoldingPattern": "libraries/folding"
 }
 
 // Per-layout and per-surface export postfix formats used to detect what
@@ -1191,9 +1193,62 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	}
 	json.add("type", type);
 
-	// Add all tiling params if tiled product
 	if (type === "Tiled") {
+		// Add all tiling settings
 		addTiling(s, job, json);
+	} else if (type === "Bound") {
+		json.addArrayProperty("FoldingPatterns", "folding-patterns");
+		var bindingMethod = json.enumValue("BindingMethod");
+		json.add("binding-method", bindingMethod);
+		if (bindingMethod === "SaddleStitch") {
+			json.addProperty("PagesPerSection", "pages-per-section");
+		}
+		json.addProperty("BindingEdge", "binding-edge");
+		json.addProperty("JogEdge", "jog-edge");
+		json.addProperty("ReadingOrder", "reading-order");
+		json.addProperty("PageBleed", "page-bleed");
+
+		// Add trim settings
+		json.startField("trim");
+		json.startDict();
+		json.addProperty("SpineTrim", "spine-trim");
+		json.addProperty("JogTrim", "jog-trim");
+		json.addProperty("FaceTrim", "face-trim");
+		json.addProperty("NonJogTrim", "non-jog-trim");
+		json.addProperty("LipType", "lip-type");
+		json.addProperty("Lip", "lip");
+		json.endDict();
+
+		// Add N-up settings
+		var nUp = s.getPropertyValue("NUp", job);
+		json.startField("n-up");
+		json.startDict();
+		json.add("number", nUp);
+		if (nUp !== "1") {
+			json.addProperty("NUpGap", "gap");
+		}
+		json.endDict();
+
+		// Add creep settings
+		var creep = s.getPropertyValue("Creep", job);
+		if (creep !== "None") {
+			json.startField("creep");
+			json.startDict();
+			json.add("type", creep);
+			if (creep === "Custom") {
+				json.addProperty("CreepTransition", "transition");
+			}
+			json.addProperty("CreepMethod", "method");
+			var calculation = json.enumValue("CreepCalculation");
+			json.add("calculation", calculation);
+			if (calculation !== "FromStock") {
+				json.addProperty("CreepAmount", "amount");
+			}
+			json.endDict();
+		}
+	} else if (type === "Folded") {
+		json.addArrayProperty("FoldingPattern", "folding-patterns");
+		json.addProperty("PageBleed", "page-bleed");
 	}
 
 	// Get multipage handling option for this artwork
@@ -1206,17 +1261,17 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	}
 	json.add("page-handling", pageHandling);
 
-	// Add simple product properties
-	json.addProperty("ProductOrdered", "ordered", false);
-	json.addProperty("ProductGrain", "grain", false);
-	json.addProperty("ProductStock", "stock", false);
-	json.addProperty("StockGrade", "grade", false);
+	// Add common product properties
+	json.addProperty("ProductOrdered", "ordered");
+	json.addProperty("ProductGrain", "grain");
+	json.addProperty("ProductStock", "stock");
+	json.addProperty("StockGrade", "grade");
 	json.addProperty("ProductMinOverruns", "min-overruns", true);
 	json.addProperty("ProductMaxOverruns", "max-overruns", true);
-	json.addProperty("ProductGroup", "group", false);
-	json.addProperty("ProductDueDate", "due-date", false);
-	json.addProperty("ProductNotes", "notes", false);
-	json.addProperty("ProductDescription", "description", false);
+	json.addProperty("ProductGroup", "group");
+	json.addProperty("ProductDueDate", "due-date");
+	json.addProperty("ProductNotes", "notes");
+	json.addProperty("ProductDescription", "description");
 	json.addArrayProperty("ProductTemplates", "templates");
 
 	// Add dieshape related properties
@@ -1226,35 +1281,35 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		json.add("dieshape-source", "ArtworkPaths");
 	} else if (dieshape === "CAD") {
 		json.add("dieshape-source", "CAD");
-		json.addProperty("DieshapeCadFile", "cad-file", false);
-		json.addProperty("DieshapeCadDesign", "cad-design", false);
+		json.addProperty("DieshapeCadFile", "cad-file");
+		json.addProperty("DieshapeCadDesign", "cad-design");
 	} else if (dieshape === "Custom Size") {
 		json.add("dieshape-source", "CustomSize");
-		json.addProperty("DieshapeWidth", "width", false);
-		json.addProperty("DieshapeHeight", "height", false);
+		json.addProperty("DieshapeWidth", "width");
+		json.addProperty("DieshapeHeight", "height");
 	} else if (dieshape === "Artwork TrimBox") {
 		json.add("dieshape-source", "ArtworkTrimbox");
 	} else if (dieshape === "Artwork Layers") {
 		// Legacy options with no corresponding dieshape source
-		json.addProperty("DieshapeCutLayer", "cut-layer", false);
-		json.addProperty("DieshapeCreaseLayer", "crease-layer", false);
-		json.addProperty("DieshapeBleedLayer", "bleed-layer", false);
+		json.addProperty("DieshapeCutLayer", "cut-layer");
+		json.addProperty("DieshapeCreaseLayer", "crease-layer");
+		json.addProperty("DieshapeBleedLayer", "bleed-layer");
 	} else if (dieshape === "Artwork Inks") {
-		json.addProperty("DieshapeCutInk", "cut-ink", false);
-		json.addProperty("DieshapeCreaseInk", "crease-ink", false);
-		json.addProperty("DieshapeBleedInk", "bleed-ink", false);
+		json.addProperty("DieshapeCutInk", "cut-ink");
+		json.addProperty("DieshapeCreaseInk", "crease-ink");
+		json.addProperty("DieshapeBleedInk", "bleed-ink");
 	} else if (dieshape === "Die Design Library") {
-		json.addProperty("DieDesignName", "die-design", false);
+		json.addProperty("DieDesignName", "die-design");
 	}
 
 	// Add autosnap properties
 	var autosnap = s.getPropertyValue("ProductAutosnap", job);
 	if (autosnap === "Autosnap with Ink") {
-		json.addProperty("AutosnapInk", "autosnap-ink", false);
-		json.addProperty("BackAutosnapInk", "back-autosnap-ink", false);
+		json.addProperty("AutosnapInk", "autosnap-ink");
+		json.addProperty("BackAutosnapInk", "back-autosnap-ink");
 	} else if (autosnap === "Autosnap with Layer") {
-		json.addProperty("AutosnapLayer", "autosnap-layer", false);
-		json.addProperty("BackAutosnapLayer", "back-autosnap-layer", false);
+		json.addProperty("AutosnapLayer", "autosnap-layer");
+		json.addProperty("BackAutosnapLayer", "back-autosnap-layer");
 	}
 
 	// Add spacing properties
@@ -1264,7 +1319,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		json.addMargins("ProductSpacing", "spacing-margins");
 	} else if (spacingType === "Contour") {
 		json.add("spacing-type", "Uniform");
-		json.addProperty("ProductSpacing", "spacing-margin", false);
+		json.addProperty("ProductSpacing", "spacing-margin");
 	} else {
 		json.add("spacing-type", "Bleed");
 	}
@@ -1296,7 +1351,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	if (!isEmpty(rotation)) {
 		json.add("rotation", rotation);
 		if (rotation === "Custom") {
-			json.addProperty("ProductRotations", "allowed-rotations", false);
+			json.addProperty("ProductRotations", "allowed-rotations");
 		}
 	}
 
