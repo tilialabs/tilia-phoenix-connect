@@ -1402,8 +1402,8 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	// Post add product request
 	var method = "jobs/" + id + "/products";
 	var http = phoenixConnect(s, method, "application/json", "Entity");
-	// Set timeout to 2 minutes to add individual product
-	http.timeOut = 120;
+	// Allow 30 minutes to upload big files
+	http.timeOut = 1800;
 	http.setAttachedFile(json.path());
 	var response = post(s, job, http, "Add Product");
 	status.handleResponse(response, "Add Product");
