@@ -123,7 +123,7 @@ var ExportActions = [
 
 // Property tag to REST Library get call for all Select from Library props
 var LibPropsToMethods = {
-	"Things" : "libraries/things",
+	"Presses" : "libraries/things",
 	"ProductStock" : "libraries/stocks",
 	"Templates" : "libraries/templates",
 	"ProductTemplates" : "libraries/templates",
@@ -1616,7 +1616,7 @@ function plan(s : Switch, job : Job, id : String, status) {
 
 	json.addProperty("GangingProfile", "profile", false);
 	json.addProperty("StopAfter", "stop-minutes", false);
-	json.addArrayProperty("Things", "things");
+	json.addArrayProperty("Presses", "things");
 	json.addArrayProperty("Templates", "templates");
 	addGradeItems(json, "sheets", "Sheets", "SelectedSheets");
 	addGradeItems(json, "rolls", "Rolls", "SelectedRolls");
