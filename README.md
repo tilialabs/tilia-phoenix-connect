@@ -1,6 +1,6 @@
 # tilia Phoenix Connect
 
-tilia Phoenix Connect is a free, open source app for Enfocus Switch available on the Enfocus App Store:
+tilia Phoenix Connect is a free, open source app for Enfocus Switch available on the Enfocus Appstore:
 https://www.enfocus.com/en/appstore/product/tilia-phoenix-connect
 
 This app provides seamless connectivity between Enfocus Switch and the award winning tilia Phoenix with over 150 dynamic properties controlling virtually all facets of bound, folded, tiled, nested, and die-based imposition, eliminating the need to build pre-defined templates.  
@@ -24,7 +24,7 @@ To run this app, you will need:
 1. A licensed copy of tilia Phoenix 7.0 or newer with the Automate module
 2. A licensed copy of Enfocus Switch 2017 update 1 or newer
 
-In order to make modifications to this app you will need the Switch Scriptor tool from Enfocus.
+In order to make modifications to this script and use it with your Switch you will need to obtain the Switch Scripting Module from Enfocus. The module will also enable the SwitchScripter application, used to create, modify and debug scripts.
 
 ## Running the app
 
