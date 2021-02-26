@@ -374,7 +374,6 @@ function planIdentifer(s : Switch, job: Job) {
 function getLibraryForProperty(s : Switch, tag : String) {
 	var names = [];
 	
-
 	if (tag in LibPropsToMethods) {
 		var items = libraryItems(s, LibPropsToMethods[tag]);
 		if (items != null) {
@@ -392,6 +391,7 @@ function getLibraryForProperty(s : Switch, tag : String) {
 					("anchor" in item && item.anchor === "Product")) {
 					names.push(item.name);
 				}
+
 			}
 		}
 	} else if (tag === "StockGrade") {
@@ -1411,18 +1411,19 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	http.timeOut = 1800;
 	http.setAttachedFile(json.path());
 	var response = post(s, job, http, "Add Product");
+
 	status.handleResponse(response, "Add Product");
 
-	// Add the Phoenix response from the Add Product call, trimming it down if it's over  
-	// 500 characters as the response can be very long.
+	// Add the Phoenix response from the Add Product call, trimming down if it's 
+	// over 500 characters as the response can be very long.
 	var formattedResponse = "";
 	if (response.length > 500) {
 		var responseSplit = response.split("\",\"")
 		for (i=0;i<15;++i) {
-			formattedResponse+=responseSplit[i]
+			formattedResponse+=responseSplit[i] + "\", \""
 		}
 		var lineCount = responseSplit.length - 15
-		formattedResponse += " + " + lineCount + " more lines.]}"
+		formattedResponse += " + " + lineCount + " more lines.\"]}"
 	}
 	else {
 		formattedResponse = response
@@ -1893,6 +1894,7 @@ function post(s : Switch, logger, http : HTTP, action : String) {
 
 		logger.log(-1, "POST done, status: " + http.getStatusCode());
 		if (http.finishedStatus == HTTP.Ok) {
+
 			// For post we will want to return the error message from Phoenix when
 			// concurrent limit exceeded and retry timeout also exceeded
 			if (!retryRequest(s, action, http, start, logger)) {
@@ -1900,6 +1902,7 @@ function post(s : Switch, logger, http : HTTP, action : String) {
 				return bytes.toString("UTF-8");
 			}
 		} else {
+
 			done = true;
 		}
 	}
@@ -2086,10 +2089,12 @@ class PlanStatus {
 		// If no response from webserver most likely connection or unexpected
 		// error on server side, record as process failure since most likely
 		// not due to user configuration or input data problem
+
 		if (!responseText) {
 			this.recordProcessFail(actionName + " request failed.  "
 							 + "Make sure Phoenix automation is running");
 		} else {
+
 			// Parse response text into JSON object
 			var response = JSON.parse(responseText);
 			if (response.warnings) {
@@ -2097,22 +2102,28 @@ class PlanStatus {
 					this.addWarning(response.warnings[i].text);
 				}
 			}
+
 			if (response.errors) {			
 				// Response errors assumed to be problem jobs so record as normal errors
 				for (var i = 0; i < response.errors.length; i++) {
+
 					this.recordError(response.errors[i].text);
 				}
 			}
 
 			// Record only most recent result resources
 			_resources = [];
+				
 			if ("resources" in response && response.resources) {
+				
 				for (var i = 0; i < response.resources.length; i++) {
 					// NOTE: no URL decoding done on resource text, caller is responsible
-					// for decoding if needed (e.g. product name)		
+					// for decoding if needed (e.g. product name)
+					
 					_resources.push(response.resources[i]);
 				}
 			}
+
 			if ("success" in response && !response.success) {
 				_success = false;
 			}
