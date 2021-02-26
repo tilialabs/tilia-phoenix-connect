@@ -123,7 +123,7 @@ var ExportActions = [
 
 // Property tag to REST Library get call for all Select from Library props
 var LibPropsToMethods = {
-	"Things" : "libraries/things",
+	"Presses" : "libraries/things",
 	"ProductStock" : "libraries/stocks",
 	"Templates" : "libraries/templates",
 	"ProductTemplates" : "libraries/templates",
@@ -373,7 +373,7 @@ function planIdentifer(s : Switch, job: Job) {
 // Select from Library callback method queries libraries/presets in Phoenix
 function getLibraryForProperty(s : Switch, tag : String) {
 	var names = [];
-
+	
 
 	if (tag in LibPropsToMethods) {
 		var items = libraryItems(s, LibPropsToMethods[tag]);
@@ -382,8 +382,13 @@ function getLibraryForProperty(s : Switch, tag : String) {
 				var item = items[i];
 				s.log(-1, "Asset: " + item.name);
 
+				if (tag === "Presses") {
+					var pressPath = item.path.substring(1,item.path.length) + item.name
+					names.push(pressPath);
+				}				
+				
 				// TODO: Stop restricting to product marks when other anchors supported
-				if ((tag !== "Marks" && tag !== "BackMarks") ||
+				if ((tag !== "Marks" && tag !== "BackMarks" && tag !== "Presses") ||
 					("anchor" in item && item.anchor === "Product")) {
 					names.push(item.name);
 				}
@@ -1188,7 +1193,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	if (!status.success()) {
 		return;
 	}
-
+	
 	// Add common product properties
 	json.addProperty("ProductOrdered", "ordered");
 	json.addProperty("ProductGrain", "grain");
@@ -1209,10 +1214,10 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		type = "Flat";
 	}
 	json.add("type", type);
-
+	
 	if (type === "Bound") {
 		json.addArrayProperty("FoldingPatterns", "folding-patterns");
-
+		
 		var bindingMethod = json.enumValue("BindingMethod");
 		json.add("binding-method", bindingMethod);
 		if (bindingMethod === "SaddleStitch") {
@@ -1220,14 +1225,14 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		}
 		json.addProperty("BindingEdge", "binding-edge");
 		json.addProperty("JogEdge", "jog-edge");
-
+		
 		var readingOrder = s.getPropertyValue("ReadingOrder", job);
 		json.add("reading-order", readingOrder);
 		if (readingOrder === "Calendar") {
 			json.addYesNoProperty("SelfCover", "self-cover");
 		}
 		json.addProperty("PageBleed", "page-bleed");
-
+		
 		// Add trim settings
 		json.startField("trim");
 		json.startDict();
@@ -1238,7 +1243,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		json.addProperty("LipType", "lip-type");
 		json.addProperty("Lip", "lip");
 		json.endDict();
-
+		
 		// Add N-up settings
 		var nUp = s.getPropertyValue("NUp", job);
 		json.startField("n-up");
@@ -1248,7 +1253,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 			json.addProperty("NUpGap", "gap");
 		}
 		json.endDict();
-
+		
 		// Add creep settings
 		var creep = s.getPropertyValue("Creep", job);
 		if (creep !== "None") {
@@ -1275,7 +1280,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		if (type === "Flat") {
 			// Get multipage handling option and front to back mirroring
 			var multipage = s.getPropertyValue("PageHandling", job);
-
+			
 			if (multipage === "One product per page") {
 				pageHandling = "OnePerPage";
 				json.addProperty("FrontToBack", "front-to-back");
@@ -1288,7 +1293,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 
 		// Add dieshape related properties
 		var dieshape = s.getPropertyValue("ProductDieshape", job);
-
+	
 		if (dieshape === "Line Type Mappings") {
 			json.add("dieshape-source", "ArtworkPaths");
 		} else if (dieshape === "CAD") {
@@ -1313,7 +1318,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		} else if (dieshape === "Die Design Library") {
 			json.addProperty("DieDesignName", "die-design");
 		}
-
+	
 		// Add autosnap properties
 		var autosnap = s.getPropertyValue("ProductAutosnap", job);
 		if (autosnap === "Autosnap with Ink") {
@@ -1323,7 +1328,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 			json.addProperty("AutosnapLayer", "autosnap-layer");
 			json.addProperty("BackAutosnapLayer", "back-autosnap-layer");
 		}
-
+		
 		// If type is tiled add tiling settings
 		if (type === "Tiled") {
 			addTiling(s, job, json);
@@ -1378,7 +1383,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	if (type === "Flat" && addColors(json, "BackInks", "back-colors")) {
 		specified = true;
 	}
-
+	
 	// Flag color source as specified if colors were explicitly defined
 	if (specified) {
 		json.add("color-source", "Specified");
@@ -1393,7 +1398,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	if (!isEmpty(priority) && priority !== "Default") {
 		json.add("priority", priority);
 	}
-
+	
 	// Add custom properties which are defined as name=value pairs
 	addCustomProperties(json);
 
@@ -1402,12 +1407,28 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	// Post add product request
 	var method = "jobs/" + id + "/products";
 	var http = phoenixConnect(s, method, "application/json", "Entity");
-	// Set timeout to 2 minutes to add individual product
-	http.timeOut = 120;
+	// Allow 30 minutes to upload big files
+	http.timeOut = 1800;
 	http.setAttachedFile(json.path());
 	var response = post(s, job, http, "Add Product");
 	status.handleResponse(response, "Add Product");
-	job.log(-1, "Add product result %1", response);
+
+	// Add the Phoenix response from the Add Product call, trimming it down if it's over  
+	// 500 characters as the response can be very long.
+	var formattedResponse = "";
+	if (response.length > 500) {
+		var responseSplit = response.split("\",\"")
+		for (i=0;i<15;++i) {
+			formattedResponse+=responseSplit[i]
+		}
+		var lineCount = responseSplit.length - 15
+		formattedResponse += " + " + lineCount + " more lines.]}"
+	}
+	else {
+		formattedResponse = response
+		}
+	
+	job.log(-1, "Add product result %1", formattedResponse);
 
 	// Record product name in artwork state for place count tracking after
 	// plan has been generated and applied to this project
@@ -1530,24 +1551,24 @@ function addTilingRule(dimension : String, rule : String, s : Switch,
 		json.endDict();
 	}
 }
-
+	
 function addColors(json : Json, tagName: String, field: String) {
 	// Add list of color entities to add product request
 	var colors = multiValues(json.s(), json.job(), tagName);
 	if (colors == null) {
 		return false;
 	}
-
+	
 	json.startArray(field);
 	for (var i = 0; i < colors.length; i++) {
 		// Add comma separator for subsequent entries
 		if (i > 0) {
 			json.addArraySeparator();
 		}
-
+		
 		// Add color entry assuming CMYK and Printing process
-
-		// NOTE: This name list format is limiting and currently does not
+		
+		// NOTE: This name list format is limiting and currently does not 
 		// support entering color values ("values": [100, 56, 0, 0]) or
 		// non-printing colors.  It might make sense to add a more advanced
 		// mode where colors can be defined as JSON or XML.
@@ -1558,14 +1579,14 @@ function addColors(json : Json, tagName: String, field: String) {
 		json.endDict();
 	}
 	json.endArray();
-
+	
 	return true;
 }
 
 function addCustomProperties(json: Json) {
 	// NOTE: The current format (PROP1=VAL1,PROP2=VAL2,...) is fairly easy to
 	// use but doesn't support non-text properties like numbers, dates, and
-	// lists.  In the future it might make sense to have a more advanced custom
+	// lists.  In the future it might make sense to have a more advanced custom 
 	// property mode as well where properties can be defined as JSON or XML for
 	// example (similar to colors above).
 	var propPairs = multiValues(json.s(), json.job(), "CustomProperties");
@@ -1573,11 +1594,11 @@ function addCustomProperties(json: Json) {
 		var started = false;
 		for (var i = 0; i < propPairs.length; i++) {
 			var pair = propPairs[i];
-
+			
 			if (PropNameValueRegex.exactMatch(pair)) {
 				var name = PropNameValueRegex.cap(1);
 				var value = PropNameValueRegex.cap(2);
-
+				
 				// Start properties array if needed
 				if (!started) {
 					json.startArray("properties");
@@ -1585,7 +1606,7 @@ function addCustomProperties(json: Json) {
 				} else {
 					json.addArraySeparator();
 				}
-
+				
 				// Add custom property entry which defaults to Text when type not set
 				json.startDict();
 				json.add("name", name);
@@ -1596,7 +1617,7 @@ function addCustomProperties(json: Json) {
 						"format for each property is NAME=VALUE", pair);
 			}
 		}
-
+		
 		// End properties array if needed
 		if (started) {
 			json.endArray();
@@ -1616,7 +1637,7 @@ function plan(s : Switch, job : Job, id : String, status) {
 
 	json.addProperty("GangingProfile", "profile", false);
 	json.addProperty("StopAfter", "stop-minutes", false);
-	json.addArrayProperty("Things", "things");
+	json.addArrayProperty("Presses", "things");
 	json.addArrayProperty("Templates", "templates");
 	addGradeItems(json, "sheets", "Sheets", "SelectedSheets");
 	addGradeItems(json, "rolls", "Rolls", "SelectedRolls");
@@ -2070,13 +2091,13 @@ class PlanStatus {
 							 + "Make sure Phoenix automation is running");
 		} else {
 			// Parse response text into JSON object
-			var response = eval(responseText);
+			var response = JSON.parse(responseText);
 			if (response.warnings) {
 				for (var i = 0; i < response.warnings.length; i++) {
 					this.addWarning(response.warnings[i].text);
 				}
 			}
-			if (response.errors) {
+			if (response.errors) {			
 				// Response errors assumed to be problem jobs so record as normal errors
 				for (var i = 0; i < response.errors.length; i++) {
 					this.recordError(response.errors[i].text);
@@ -2088,7 +2109,7 @@ class PlanStatus {
 			if ("resources" in response && response.resources) {
 				for (var i = 0; i < response.resources.length; i++) {
 					// NOTE: no URL decoding done on resource text, caller is responsible
-					// for decoding if needed (e.g. product name)
+					// for decoding if needed (e.g. product name)		
 					_resources.push(response.resources[i]);
 				}
 			}
