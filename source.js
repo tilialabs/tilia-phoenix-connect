@@ -1415,21 +1415,19 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	status.handleResponse(response, "Add Product");
 
 	// Add the Phoenix response from the Add Product call, trimming down if it's 
-	// over 500 characters as the response can be very long.
-	var formattedResponse = "";
+	// over 500 characters as the response can be very long
 	if (response.length > 500) {
-		var responseSplit = response.split("\",\"")
-		for (i=0;i<15;++i) {
-			formattedResponse+=responseSplit[i] + "\", \""
+		var entries = response.split("\",\"");
+		if (entries.length > 15) {
+		    response = "";
+            for (i=0; i < 15; ++i) {
+                response += entries[i] + "\", \"";
+            }
+            var lineCount = entries.length - 15;
+            response += " + " + lineCount + " more lines.\"]}";
 		}
-		var lineCount = responseSplit.length - 15
-		formattedResponse += " + " + lineCount + " more lines.\"]}"
 	}
-	else {
-		formattedResponse = response
-		}
-	
-	job.log(-1, "Add product result %1", formattedResponse);
+	job.log(-1, "Add product result %1", response);
 
 	// Record product name in artwork state for place count tracking after
 	// plan has been generated and applied to this project
@@ -1894,15 +1892,13 @@ function post(s : Switch, logger, http : HTTP, action : String) {
 
 		logger.log(-1, "POST done, status: " + http.getStatusCode());
 		if (http.finishedStatus == HTTP.Ok) {
-
-			// For post we will want to return the error message from Phoenix when
-			// concurrent limit exceeded and retry timeout also exceeded
+			// For post we will want to return the error message from Phoenix
+			// when concurrent limit exceeded and retry timeout also exceeded
 			if (!retryRequest(s, action, http, start, logger)) {
 				var bytes = http.getServerResponse();
 				return bytes.toString("UTF-8");
 			}
 		} else {
-
 			done = true;
 		}
 	}
@@ -2089,21 +2085,26 @@ class PlanStatus {
 		// If no response from webserver most likely connection or unexpected
 		// error on server side, record as process failure since most likely
 		// not due to user configuration or input data problem
-
 		if (!responseText) {
 			this.recordProcessFail(actionName + " request failed.  "
 							 + "Make sure Phoenix automation is running");
 		} else {
+			// Parse response text into JSON object using JSON.parse() when
+			// available since it is safer and can handler longer text lengths
+			var response;
+			if (typeof JSON !== "undefined") {
+				response = JSON.parse(responseText);
+			} else {
+				response = eval(responseText);
+			}
 
-			// Parse response text into JSON object
-			var response = JSON.parse(responseText);
 			if (response.warnings) {
 				for (var i = 0; i < response.warnings.length; i++) {
 					this.addWarning(response.warnings[i].text);
 				}
 			}
 
-			if (response.errors) {			
+			if (response.errors) {
 				// Response errors assumed to be problem jobs so record as normal errors
 				for (var i = 0; i < response.errors.length; i++) {
 
@@ -2113,13 +2114,11 @@ class PlanStatus {
 
 			// Record only most recent result resources
 			_resources = [];
-				
+
 			if ("resources" in response && response.resources) {
-				
 				for (var i = 0; i < response.resources.length; i++) {
 					// NOTE: no URL decoding done on resource text, caller is responsible
 					// for decoding if needed (e.g. product name)
-					
 					_resources.push(response.resources[i]);
 				}
 			}
