@@ -1292,10 +1292,16 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		json.addProperty("ShapeHandling", "shape-handling");
 
 		// Add dieshape related properties
-		var dieshape = s.getPropertyValue("ProductDieshape", job);
-	
-		if (dieshape === "Line Type Mappings") {
+		var dieshape = s.getPropertyValue("ProductDieshape", job);		
+		
+		if (dieshape === "Tool Type Mappings") {
 			json.add("dieshape-source", "ArtworkPaths");
+			if ("DieshapeWidth") {
+				json.addProperty("DieshapeWidth", "width");
+			}
+			if ("DieshapeHeight") {
+				json.addProperty("DieshapeHeight", "height");
+			}
 		} else if (dieshape === "CAD") {
 			json.add("dieshape-source", "CAD");
 			json.addProperty("DieshapeCadFile", "cad-file");
@@ -1892,7 +1898,7 @@ function post(s : Switch, logger, http : HTTP, action : String) {
 
 		logger.log(-1, "POST done, status: " + http.getStatusCode());
 		if (http.finishedStatus == HTTP.Ok) {
-			// For post we will want to return the error message from Phoenix
+			// For post we will want to return the error message from Phoenix 
 			// when concurrent limit exceeded and retry timeout also exceeded
 			if (!retryRequest(s, action, http, start, logger)) {
 				var bytes = http.getServerResponse();
@@ -2089,6 +2095,7 @@ class PlanStatus {
 			this.recordProcessFail(actionName + " request failed.  "
 							 + "Make sure Phoenix automation is running");
 		} else {
+		
 			// Parse response text into JSON object using JSON.parse() when
 			// available since it is safer and can handler longer text lengths
 			var response;
@@ -2104,7 +2111,7 @@ class PlanStatus {
 				}
 			}
 
-			if (response.errors) {
+			if (response.errors) {			
 				// Response errors assumed to be problem jobs so record as normal errors
 				for (var i = 0; i < response.errors.length; i++) {
 
@@ -2114,11 +2121,11 @@ class PlanStatus {
 
 			// Record only most recent result resources
 			_resources = [];
-
+				
 			if ("resources" in response && response.resources) {
 				for (var i = 0; i < response.resources.length; i++) {
 					// NOTE: no URL decoding done on resource text, caller is responsible
-					// for decoding if needed (e.g. product name)
+					// for decoding if needed (e.g. product name)	
 					_resources.push(response.resources[i]);
 				}
 			}
