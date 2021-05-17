@@ -1286,6 +1286,8 @@ function addProduct(s : Switch, job : Job, id : String, status,
 				json.addProperty("FrontToBack", "front-to-back");
 			} else if (multipage === "One product per two pages") {
 				pageHandling = "OnePerTwoPages";
+			} else {
+				pageHandling = "OnePerFile";
 			}
 		}
 		json.add("page-handling", pageHandling);
