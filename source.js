@@ -1276,7 +1276,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		json.addProperty("PageBleed", "page-bleed");
 	} else {
 		// Flat and tiled product type case
-		pageHandling = "OnePerPage";
+		pageHandling = "OnePerFile";
 		if (type === "Flat") {
 			// Get multipage handling option and front to back mirroring
 			var multipage = s.getPropertyValue("PageHandling", job);
@@ -1286,7 +1286,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 				json.addProperty("FrontToBack", "front-to-back");
 			} else if (multipage === "One product per two pages") {
 				pageHandling = "OnePerTwoPages";
-			}
+			} 
 		}
 		json.add("page-handling", pageHandling);
 		json.addProperty("ShapeHandling", "shape-handling");
