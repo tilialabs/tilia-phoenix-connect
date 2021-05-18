@@ -1340,7 +1340,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	if (spacingType === "Margins") {
 		json.add("spacing-type", "Margins");
 		json.addMargins("ProductSpacing", "spacing-margins");
-	} else if (spacingType === "Contour") {
+	} else if (spacingType === "Uniform") {
 		json.add("spacing-type", "Uniform");
 		json.addProperty("ProductSpacing", "spacing-margin");
 	} else {
