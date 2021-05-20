@@ -1986,13 +1986,13 @@ function multiValues(s : Switch, job : Job, tagName : String) {
 		return null;
 	}
 
-	// Split each value by new line and commas to cover script expression
-  // and single text editor cases where list is not returned
-  var array = [];
+	// Split each value by new line, commas and semicolons to cover script expression
+	// and single text editor cases where list is not returned
+	var array = [];
 	for (var i = 0; i < values.length; ++i) {
 		var split1 = values[i].split("\n");
 		for (var j = 0; j < split1.length; ++j) {
-			var split2 = split1[j].split(",");
+			var split2 = split1[j].split(/(\,|\;)/g);
 			for (var k = 0; k < split2.length; ++k) {
 				if (!isEmpty(split2[k])) {
 					array.push(split2[k]);
