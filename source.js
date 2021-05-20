@@ -1992,7 +1992,7 @@ function multiValues(s : Switch, job : Job, tagName : String) {
 	for (var i = 0; i < values.length; ++i) {
 		var split1 = values[i].split("\n");
 		for (var j = 0; j < split1.length; ++j) {
-			var split2 = split1[j].split(",");
+			var split2 = split1[j].split(/(\,|\;)/g);
 			for (var k = 0; k < split2.length; ++k) {
 				if (!isEmpty(split2[k])) {
 					array.push(split2[k]);
