@@ -880,7 +880,7 @@ function collectPlacedItems(report, job) {
 	}
 
 	var placed = {};
-	var items = childElement(doc.getDocumentElement(), "products");
+	var items = childElement(doc.getDocumentElement(), "products2");
 	if (items != null) {
 		var children = items.getChildNodes();
 		for (var i = 0; i < children.getCount(); i++) {
@@ -1299,7 +1299,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		json.addProperty("PageBleed", "page-bleed");
 	} else {
 		// Flat and tiled product type case
-		pageHandling = "OnePerPage";
+		pageHandling = "OnePerFile";
 		if (type === "Flat") {
 			// Get multipage handling option and front to back mirroring
 			var multipage = s.getPropertyValue("PageHandling", job);
@@ -1309,7 +1309,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 				json.addProperty("FrontToBack", "front-to-back");
 			} else if (multipage === "One product per two pages") {
 				pageHandling = "OnePerTwoPages";
-			}
+			} 
 		}
 		json.add("page-handling", pageHandling);
 		json.addProperty("ShapeHandling", "shape-handling");
@@ -1363,7 +1363,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	if (spacingType === "Margins") {
 		json.add("spacing-type", "Margins");
 		json.addMargins("ProductSpacing", "spacing-margins");
-	} else if (spacingType === "Contour") {
+	} else if (spacingType === "Uniform") {
 		json.add("spacing-type", "Uniform");
 		json.addProperty("ProductSpacing", "spacing-margin");
 	} else {
@@ -2009,13 +2009,13 @@ function multiValues(s : Switch, job : Job, tagName : String) {
 		return null;
 	}
 
-	// Split each value by new line and commas to cover script expression
-  // and single text editor cases where list is not returned
-  var array = [];
+	// Split each value by new line, commas and semicolons to cover script expression
+	// and single text editor cases where list is not returned
+	var array = [];
 	for (var i = 0; i < values.length; ++i) {
 		var split1 = values[i].split("\n");
 		for (var j = 0; j < split1.length; ++j) {
-			var split2 = split1[j].split(",");
+			var split2 = split1[j].split(/(\,|\;)/g);
 			for (var k = 0; k < split2.length; ++k) {
 				if (!isEmpty(split2[k])) {
 					array.push(split2[k]);
