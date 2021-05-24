@@ -339,7 +339,7 @@ function pendingJobs(s : Switch, activeJobs : Array, tag : String,
 		for (var i = 0; i < jobs.length; ++i) {
 			// Restrict only to jobs that have been processed in the jobArrived()
 			// hook and are not in the current active jobs list
-			var job = jobs.at(i);
+			var job = jobs[i];
 			var data = job.getPrivateData(tag);
 			if (data.length > 0 &&
 				!arrayContains(activeJobs, job.getUniqueNamePrefix())) {
