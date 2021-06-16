@@ -309,38 +309,14 @@ function processJobs(s : Switch) {
 // Organize all arrived jobs into matching plan identifier groups
 function pendingJobs(s : Switch, activeJobs : Array, tag : String,
 					 direct : Boolean) {
-	// Get File sort method property value
-	var fileSortMethod = s.getPropertyValue("FileSortMethod");
 
 	var groups = [];
 	var jobs = s.getJobs();
-	
-	// Check if File sort method is not equal to Default
-	if (fileSortMethod !== "Default") {
-		// Define new jobs array which will be used to sort jobs
-		var jobsArray = [];
-		
-		// Push all jobs from the jobs variable in to the jobs array
-		for (var i = 0; i < jobs.length; i += 1) {
-			jobsArray.push(jobs.at(i));
-		}
-	
-		// Sort name ascending based on job name proper
-		jobsArray.sort(fileSorter);
-		
-		// If File sort method is equal to Name Descending then reverse the array
-		if (fileSortMethod === "Name Descending (Z-A 9-0)") {
-			jobsArray.reverse();
-		}
-		// Update the jobs variable to equal the jobs array
-		jobs = jobsArray;
-	}
-	
 	if (jobs.length > 0) {
 		for (var i = 0; i < jobs.length; ++i) {
 			// Restrict only to jobs that have been processed in the jobArrived()
 			// hook and are not in the current active jobs list
-			var job = jobs[i];
+			var job = jobs.at(i);
 			var data = job.getPrivateData(tag);
 			if (data.length > 0 &&
 				!arrayContains(activeJobs, job.getUniqueNamePrefix())) {
@@ -376,11 +352,6 @@ function pendingJobs(s : Switch, activeJobs : Array, tag : String,
 function planGroupSorter(g1, g2) {
 	return g1.oldestTime() - g2.oldestTime();
 }
-
-// Sorting function for file sorting based on "FileSortMethod"
-function fileSorter(a, b) {
-	return a.getNameProper() < b.getNameProper() ? -1 : a.getNameProper() > b.getNameProper() ? 1 : 0;
-};
 
 // Build array of unique job name prefixes from comma-delimited string
 function activeJobsFromData(data: String) {
@@ -1323,7 +1294,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		// Add dieshape related properties
 		var dieshape = s.getPropertyValue("ProductDieshape", job);
 	
-		if (dieshape === "Line Type Mappings") {
+		if (dieshape === "Tool Type Mappings") {
 			json.add("dieshape-source", "ArtworkPaths");
 		} else if (dieshape === "CAD") {
 			json.add("dieshape-source", "CAD");
@@ -1346,6 +1317,12 @@ function addProduct(s : Switch, job : Job, id : String, status,
 			json.addProperty("DieshapeBleedInk", "bleed-ink");
 		} else if (dieshape === "Die Design Library") {
 			json.addProperty("DieDesignName", "die-design");
+		}
+		
+		var scaling = s.getPropertyValue("Scaling", job);
+		if (scaling === "Yes") {
+			json.addProperty("ScalingH", "width");
+			json.addProperty("ScalingV", "height");
 		}
 	
 		// Add autosnap properties
