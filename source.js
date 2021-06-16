@@ -1612,7 +1612,7 @@ function addCustomProperties(json: Json) {
 				json.add("value", value);
 				json.endDict();
 			} else {
-				job.log(2, "Invalid custom property format: '%1', expected " +
+				json.job().log(2, "Invalid custom property format: '%1', expected " +
 						"format for each property is NAME=VALUE", pair);
 			}
 		}
