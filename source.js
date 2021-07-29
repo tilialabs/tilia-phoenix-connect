@@ -931,6 +931,7 @@ function createLayoutReport(report, layout, job) {
 	// Remove products that are not placed into this layout
 	if (edited) {
 		var products = childElement(root, "products");
+			if (products === null) products = childElement(root, "products2");
 			if (products != null) {
 			var toRemove = [];
 			var children = products.getChildNodes();
