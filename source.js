@@ -858,6 +858,7 @@ function collectPlacedItems(report, job) {
 
 	var placed = {};
 	var items = childElement(doc.getDocumentElement(), "products");
+	if (items === null) items = childElement(doc.getDocumentElement(), "products2");
 	if (items != null) {
 		var children = items.getChildNodes();
 		for (var i = 0; i < children.getCount(); i++) {
