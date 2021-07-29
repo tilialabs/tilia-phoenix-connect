@@ -858,7 +858,7 @@ function collectPlacedItems(report, job) {
 
 	var placed = {};
 	var items = childElement(doc.getDocumentElement(), "products");
-	if (items === null) items = childElement(doc.getDocumentElement(), "products2");
+	if (items == null) items = childElement(doc.getDocumentElement(), "products2");
 	if (items != null) {
 		var children = items.getChildNodes();
 		for (var i = 0; i < children.getCount(); i++) {
@@ -931,7 +931,7 @@ function createLayoutReport(report, layout, job) {
 	// Remove products that are not placed into this layout
 	if (edited) {
 		var products = childElement(root, "products");
-			if (products === null) products = childElement(root, "products2");
+			if (products == null) products = childElement(root, "products2");
 			if (products != null) {
 			var toRemove = [];
 			var children = products.getChildNodes();
