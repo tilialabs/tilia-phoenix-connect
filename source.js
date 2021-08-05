@@ -309,9 +309,32 @@ function processJobs(s : Switch) {
 // Organize all arrived jobs into matching plan identifier groups
 function pendingJobs(s : Switch, activeJobs : Array, tag : String,
 					 direct : Boolean) {
+	// Get File sort method property value
+	var fileSortMethod = s.getPropertyValue("FileSortMethod");
 
 	var groups = [];
 	var jobs = s.getJobs();
+	
+	// Define new jobs array which will be used to sort jobs
+	var jobsArray = [];
+	
+	// Push all jobs from the jobs variable in to the jobs array
+	for (var i = 0; i < jobs.length; i += 1) jobsArray.push(jobs.at(i));
+	
+	// Check if File sort method is not equal to Default
+	if (fileSortMethod !== "Default") {
+		// Sort name ascending based on job name proper
+		jobsArray.sort(function (a, b) {return a.getNameProper() < b.getNameProper() ? -1 : a.getNameProper() > b.getNameProper() ? 1 : 0;});
+		
+		// If File sort method is equal to Name Descending then reverse the array
+		if (fileSortMethod === "Name Descending (Z-A 9-0)") {
+			jobsArray.reverse();
+		}
+	}
+	
+	// Update the jobs variable to equal the jobs array
+	jobs = jobsArray;
+	
 	if (jobs.length > 0) {
 		for (var i = 0; i < jobs.length; ++i) {
 			// Restrict only to jobs that have been processed in the jobArrived()
