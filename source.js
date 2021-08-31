@@ -315,14 +315,15 @@ function pendingJobs(s : Switch, activeJobs : Array, tag : String,
 	var groups = [];
 	var jobs = s.getJobs();
 	
-	// Define new jobs array which will be used to sort jobs
-	var jobsArray = [];
-	
-	// Push all jobs from the jobs variable in to the jobs array
-	for (var i = 0; i < jobs.length; i += 1) jobsArray.push(jobs.at(i));
-	
 	// Check if File sort method is not equal to Default
-	if (fileSortMethod !== "Default") {
+	if (fileSortMethod !== "None") {
+		
+		// Define new jobs array which will be used to sort jobs
+		var jobsArray = [];
+	
+		// Push all jobs from the jobs variable in to the jobs array
+		for (var i = 0; i < jobs.length; i += 1) jobsArray.push(jobs.at(i));		
+		
 		// Sort name ascending based on job name proper
 		jobsArray.sort(function (a, b) {return a.getNameProper() < b.getNameProper() ? -1 : a.getNameProper() > b.getNameProper() ? 1 : 0;});
 		
@@ -330,10 +331,10 @@ function pendingJobs(s : Switch, activeJobs : Array, tag : String,
 		if (fileSortMethod === "Name Descending (Z-A 9-0)") {
 			jobsArray.reverse();
 		}
+		
+		// Update the jobs variable to equal the jobs array
+		jobs = jobsArray;
 	}
-	
-	// Update the jobs variable to equal the jobs array
-	jobs = jobsArray;
 	
 	if (jobs.length > 0) {
 		for (var i = 0; i < jobs.length; ++i) {
