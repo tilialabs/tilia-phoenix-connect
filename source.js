@@ -314,33 +314,38 @@ function pendingJobs(s : Switch, activeJobs : Array, tag : String,
 
 	var groups = [];
 	var jobs = s.getJobs();
+
+	// Define new jobs array which will be used to sort jobs
+	var jobsArray = [];
 	
+	// Push all jobs from the jobs variable in to the jobs array
+	for (var i = 0; i < jobs.length; i += 1) {
+		jobsArray.push(jobs.at(i));		
+	}
+				
 	// Check if File sort method is not equal to Default
 	if (fileSortMethod !== "None") {
-		
-		// Define new jobs array which will be used to sort jobs
-		var jobsArray = [];
-	
-		// Push all jobs from the jobs variable in to the jobs array
-		for (var i = 0; i < jobs.length; i += 1) jobsArray.push(jobs.at(i));		
 		
 		// Sort name ascending based on job name proper
 		jobsArray.sort(function (a, b) {return a.getNameProper() < b.getNameProper() ? -1 : a.getNameProper() > b.getNameProper() ? 1 : 0;});
 		
 		// If File sort method is equal to Name Descending then reverse the array
-		if (fileSortMethod === "Name Descending (Z-A 9-0)") {
+		if (fileSortMethod === "Reverse") {
 			jobsArray.reverse();
 		}
-		
-		// Update the jobs variable to equal the jobs array
-		jobs = jobsArray;
-	}
+	
+	} 
+
+	// Update the jobs variable to equal the jobs array
+	jobs = jobsArray;
+	
 	
 	if (jobs.length > 0) {
 		for (var i = 0; i < jobs.length; ++i) {
 			// Restrict only to jobs that have been processed in the jobArrived()
 			// hook and are not in the current active jobs list
-			var job = jobs.at(i);
+			s.log(-1, "type of jobs: " + typeof jobs);
+			var job = jobs[i];
 			var data = job.getPrivateData(tag);
 			if (data.length > 0 &&
 				!arrayContains(activeJobs, job.getUniqueNamePrefix())) {
