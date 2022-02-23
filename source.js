@@ -959,7 +959,7 @@ function createLayoutReport(report, layout, job) {
 
 	// Remove products that are not placed into this layout
 	if (edited) {
-		var products = childElement(root, "products");
+		var products = childElement(root, "products") ? childElement(root, "products") : childElement(root, "products2");
 			if (products != null) {
 			var toRemove = [];
 			var children = products.getChildNodes();
@@ -975,7 +975,7 @@ function createLayoutReport(report, layout, job) {
 				products.removeChild(toRemove[i]);
 			}
 		} else {
-			job.log(2, "'products' element not found while parsing XML report");
+			job.log(2, "Neither 'products' nor 'products2' element found while parsing XML report");
 		}
 	}
 
