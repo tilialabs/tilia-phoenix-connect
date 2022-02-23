@@ -39,6 +39,14 @@ var ExportActions = [
 		"preset" : "ExportJdfPreset"
 	},
 	{
+		"name" : "Export Cutting JDF",
+		"option" : "IncludeCuttingJdf",
+		"method" : "/export/jdf-cutting",
+		"postfix" : null,
+		"extension" : "jdf",
+		"preset" : "ExportCuttingJdfPreset"
+	},
+	{
 		"name" : "Export PDF",
 		"option" : "IncludeImposedPdf",
 		"method" : "/export/pdf",
@@ -1730,7 +1738,7 @@ function addGradeItems(json, name : String, selectMode : String,
 }
 
 function applyBest(s : Switch, job : Job, id : String, status) {
-	// Get best plan result based on sorting method
+	// Get best plan result 
 	var planResultSorting = s.getPropertyValue("PlanResultSorting");
  	var method = "jobs/" + id + "/plan/results?limit=1&sorting=" + planResultSorting;	
 	
