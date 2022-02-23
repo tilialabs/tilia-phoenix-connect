@@ -1730,8 +1730,10 @@ function addGradeItems(json, name : String, selectMode : String,
 }
 
 function applyBest(s : Switch, job : Job, id : String, status) {
-	// Get best plan result, i.e. lowest cost
-	var method = "jobs/" + id + "/plan/results?limit=1";
+	// Get best plan result based on sorting method
+	var planResultSorting = s.getPropertyValue("PlanResultSorting");
+ 	var method = "jobs/" + id + "/plan/results?limit=1&sorting=" + planResultSorting;	
+	
 	var http = phoenixConnect(s, method, "application/json", "None");
 	var response = get(s, job, http, "Get Best Plan Result");
 	if (response == null) {
