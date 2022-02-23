@@ -885,7 +885,9 @@ function collectPlacedItems(report, job) {
 	}
 
 	var placed = {};
-	var items = childElement(doc.getDocumentElement(), "products");
+	// Logic to support both products and products2 element depending on whether Phoenix 
+	// is running the Switch Connector or REST Service. REST Service uses products v2
+	var items = childElement(doc.getDocumentElement(), "products") ? childElement(doc.getDocumentElement(), "products") : childElement(doc.getDocumentElement(), "products2");
 	if (items != null) {
 		var children = items.getChildNodes();
 		for (var i = 0; i < children.getCount(); i++) {
