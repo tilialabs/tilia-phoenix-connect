@@ -126,6 +126,14 @@ var ExportActions = [
 		"postfix" : null,
 		"extension" : "json",
 		"preset" : "ExportJsonReportPreset"
+	},
+	{
+		"name" : "Export CSV Report",
+		"option" : "IncludeCsvReport",
+		"method" : "/export/report/csv",
+		"postfix" : null,
+		"extension" : "csv",
+		"preset" : "ExportCsvReportPreset"
 	}
 ]
 
@@ -146,6 +154,7 @@ var LibPropsToMethods = {
 	"ExportPdfReportPreset" : "presets/export/report/pdf",
 	"ExportXmlReportPreset" : "presets/export/report/xml",
 	"ExportJsonReportPreset" : "presets/export/report/json",
+	"ExportCsvReportPreset" : "presets/export/report/csv",
 	"GangingProfile" : "presets/ganging/profiles",
 	"CuttingJdfPreset" : "presets/export/jdf-cutting",
 	"ExportCf2Preset" : "presets/export/die/cff2",
@@ -1463,12 +1472,12 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	if (response.length > 500) {
 		var entries = response.split("\",\"");
 		if (entries.length > 15) {
-		    response = "";
-            for (i=0; i < 15; ++i) {
-                response += entries[i] + "\", \"";
-            }
-            var lineCount = entries.length - 15;
-            response += " + " + lineCount + " more lines.\"]}";
+			response = "";
+			for (i=0; i < 15; ++i) {
+				response += entries[i] + "\", \"";
+			}
+			var lineCount = entries.length - 15;
+			response += " + " + lineCount + " more lines.\"]}";
 		}
 	}
 	job.log(-1, "Add product result %1", response);
@@ -1740,7 +1749,7 @@ function addGradeItems(json, name : String, selectMode : String,
 function applyBest(s : Switch, job : Job, id : String, status) {
 	// Get best plan result 
 	var planResultSorting = s.getPropertyValue("PlanResultSorting");
- 	var method = "jobs/" + id + "/plan/results?limit=1&sorting=" + planResultSorting;	
+	 var method = "jobs/" + id + "/plan/results?limit=1&sorting=" + planResultSorting;	
 	
 	var http = phoenixConnect(s, method, "application/json", "None");
 	var response = get(s, job, http, "Get Best Plan Result");
