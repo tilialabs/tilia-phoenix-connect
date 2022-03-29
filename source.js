@@ -1252,6 +1252,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	json.addProperty("ProductDueDate", "due-date");
 	json.addProperty("ProductNotes", "notes");
 	json.addProperty("ProductDescription", "description");
+	json.addProperty("ProductColorAnalysis", "color-analysis");
 	json.addArrayProperty("ProductTemplates", "templates");
 
 	// See what type of product we are adding
