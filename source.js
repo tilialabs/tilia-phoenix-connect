@@ -1181,6 +1181,7 @@ function queryJobAndCreate(s : Switch, job : Job, id : String,
 	// Build JSON Create Job request in temp file
 		var json = new Json(s, job);
 		json.add("id", id);
+		addCustomProperties(json, "ProjectCustomProperties");
 
 		// If running in Phoenix Job mode, add the job as a job template to open
 		// job in backwards compatible way with Phoenix 6.1 and earlier
@@ -1454,7 +1455,7 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	}
 	
 	// Add custom properties which are defined as name=value pairs
-	addCustomProperties(json);
+	addCustomProperties(json, "CustomProperties");
 
 	json.commit();
 
@@ -1636,13 +1637,13 @@ function addColors(json : Json, tagName: String, field: String) {
 	return true;
 }
 
-function addCustomProperties(json: Json) {
+function addCustomProperties(json: Json, tagName: String) {
 	// NOTE: The current format (PROP1=VAL1,PROP2=VAL2,...) is fairly easy to
 	// use but doesn't support non-text properties like numbers, dates, and
 	// lists.  In the future it might make sense to have a more advanced custom 
 	// property mode as well where properties can be defined as JSON or XML for
 	// example (similar to colors above).
-	var propPairs = multiValues(json.s(), json.job(), "CustomProperties");
+	var propPairs = multiValues(json.s(), json.job(), tagName);
 	if (propPairs != null) {
 		var started = false;
 		for (var i = 0; i < propPairs.length; i++) {
@@ -1664,6 +1665,9 @@ function addCustomProperties(json: Json) {
 				json.startDict();
 				json.add("name", name);
 				json.add("value", value);
+				if (tagName == "ProjectCustomProperties") {
+					json.add("type", "String")
+				}
 				json.endDict();
 			} else {
 				json.job().log(2, "Invalid custom property format: '%1', expected " +
