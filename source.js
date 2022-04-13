@@ -160,7 +160,8 @@ var LibPropsToMethods = {
 	"ExportCf2Preset" : "presets/export/die/cff2",
 	"ExportVectorPreset" : "presets/export/pdf-vector",
 	"FoldingPatterns": "libraries/folding",
-		"FoldingPattern": "libraries/folding"
+	"FoldingPattern": "libraries/folding",
+	"TilingPreset": "libraries/tiling"
 }
 
 // Per-layout and per-surface export postfix formats used to detect what
@@ -483,6 +484,8 @@ function getLibraryForProperty(s : Switch, tag : String) {
 		} else {
 			s.log(2, "Could not retrieve any stocks from library");
 		}
+	} else if (tag === "TilingPreset") {
+		var id = libraryTilingPresetId(s);
 	} else {
 		s.log(3, "Get Library request from unknown property: " + tag);
 	}
@@ -522,6 +525,51 @@ function libraryStockId(s : Switch) {
 			  "grades from library");
 	}
 	return stockId;
+}
+
+function libraryTilingPresetId(s : Switch) {
+	var tilingId = null;
+	var tiling = s.getPropertyValue("TilingPreset", null);
+	if (!isEmpty(tiling)) {
+		var tilings = libraryItems(s, LibPropsToMethods["TilingPreset"]);
+		if (tiling != null) {
+			for (var i = 0; i < tilings.length; ++i) {
+				if (tilings[i].name === tiling) {
+					tilingId = tilings[i].id;
+					break;
+				}
+			}
+		}
+
+		if (tilingId == null) {
+			s.log(2, "Could not find tiling ID when getting tiling preset for " + tiling);
+		}
+	} else {
+		s.log(2, "Product tiling must be set to a constant value to retrieve tiling from library");
+	}
+	return tilingId;
+}
+
+function libraryMarkId(s : Switch, mark) {
+	var markId = null;
+	if (!isEmpty(mark)) {
+		var marks = libraryItems(s, LibPropsToMethods["Marks"]);
+		if (mark != null) {
+			for (var i = 0; i < marks.length; ++i) {
+				if (marks[i].name === mark) {
+					markId = marks[i].id;
+					break;
+				}
+			}
+		}
+
+		if (markId == null) {
+			s.log(2, "Could not find specified mark: '" + mark + "'");
+		}
+	} else {
+		s.log(2, "Mark not specified");
+	}
+	return markId;
 }
 
 function libraryGrades(s : Switch, stockId : String) {
@@ -1181,7 +1229,7 @@ function queryJobAndCreate(s : Switch, job : Job, id : String,
 	// Build JSON Create Job request in temp file
 		var json = new Json(s, job);
 		json.add("id", id);
-		addCustomProperties(json, "ProjectCustomProperties");
+		addCustomProperties(json, "ProjectCustomProperties", false);
 
 		// If running in Phoenix Job mode, add the job as a job template to open
 		// job in backwards compatible way with Phoenix 6.1 and earlier
@@ -1222,11 +1270,16 @@ function deletePhoenixJob(s : Switch, logger, id : String) {
 
 function addProduct(s : Switch, job : Job, id : String, status,
 					artworkState) {
-
+	
+	var useProjectsAPI = false;
 	job.log(-1, "Adding product to Phoenix job " + job.getName());
 
 	// Add product to job by building an add product request
 	var json = new Json(s, job);
+
+	if(s.getPropertyValue("TilingPreset",job) != null && s.getPropertyValue("TilingPreset",job) != "") {
+		useProjectsAPI = true
+	}
 
 	// Product name fallback to filename of incoming artwork file
 	var name = s.getPropertyValue("ProductName", job);
@@ -1237,24 +1290,47 @@ function addProduct(s : Switch, job : Job, id : String, status,
 
 	// Add inbound job path as artwork path and check to see if job file
 	// path failed in case it is performing upload to Phoenix
-	json.add("artwork", jobFilePath(s, job, id, status));
+	json.add(useProjectsAPI ? "artwork-file" : "artwork", jobFilePath(s, job, id, status));
 	if (!status.success()) {
 		return;
 	}
 	
 	// Add common product properties
-	json.addProperty("ProductOrdered", "ordered");
 	json.addProperty("ProductGrain", "grain");
-	json.addProperty("ProductStock", "stock");
 	json.addProperty("StockGrade", "grade");
-	json.addProperty("ProductMinOverruns", "min-overruns", true);
-	json.addProperty("ProductMaxOverruns", "max-overruns", true);
 	json.addProperty("ProductGroup", "group");
 	json.addProperty("ProductDueDate", "due-date");
 	json.addProperty("ProductNotes", "notes");
 	json.addProperty("ProductDescription", "description");
 	json.addProperty("ProductColorAnalysis", "color-analysis");
 	json.addArrayProperty("ProductTemplates", "templates");
+	
+	
+	// Add common product properties with different keys for Projects API
+	json.addProperty("ProductOrdered", useProjectsAPI ? "quantity" : "ordered");
+
+	// Add common properties with different types for Projects API
+	if (useProjectsAPI) {
+		// Add Stock
+		json.startField("stock");
+		json.startDict();
+		json.add("id", libraryStockId(s));
+		json.endDict();
+		
+		// Add Overruns
+		json.startField("overruns");
+		json.startDict();
+		json.addProperty("ProductMinOverruns","start");
+		json.addProperty("ProductMaxOverruns","end");
+		json.add("ProductMaxOverruns","end");
+		json.endDict();
+	}
+	else {
+		json.addProperty("ProductStock", "stock");
+		json.addProperty("ProductMinOverruns", "min-overruns", true);
+		json.addProperty("ProductMaxOverruns", "max-overruns", true);
+	}
+
 
 	// See what type of product we are adding
 	var type = s.getPropertyValue("ProductType", job);
@@ -1262,7 +1338,9 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	if (isEmpty(type)) {
 		type = "Flat";
 	}
-	json.add("type", type);
+	if(!useProjectsAPI) {
+		json.add("type", type);
+	}
 	
 	if (type === "Bound") {
 		json.addArrayProperty("FoldingPatterns", "folding-patterns");
@@ -1346,15 +1424,23 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		if (dieshape === "Tool Type Mappings") {
 			json.add("dieshape-source", "ArtworkPaths");
 		} else if (dieshape === "CAD") {
-			json.add("dieshape-source", "CAD");
+			json.add(useProjectsAPI ? "die-design-source" : "dieshape-source", "CAD");
 			json.addProperty("DieshapeCadFile", "cad-file");
 			json.addProperty("DieshapeCadDesign", "cad-design");
 		} else if (dieshape === "Custom Size") {
-			json.add("dieshape-source", "CustomSize");
-			json.addProperty("DieshapeWidth", "width");
-			json.addProperty("DieshapeHeight", "height");
+			json.add(useProjectsAPI ? "die-design-source" : "dieshape-source", "CustomSize");
+			if(useProjectsAPI) {
+				json.startField("size");
+				json.startDict();
+				json.addProperty("DieshapeWidth", "width");
+				json.addProperty("DieshapeHeight", "height");
+				json.endDict();
+			} else {
+				json.addProperty("DieshapeWidth", "width");
+				json.addProperty("DieshapeHeight", "height");
+			}
 		} else if (dieshape === "Artwork TrimBox") {
-			json.add("dieshape-source", "ArtworkTrimbox");
+			json.add(useProjectsAPI ? "die-design-source" : "dieshape-source", "ArtworkTrimbox");
 		} else if (dieshape === "Artwork Layers") {
 			// Legacy options with no corresponding dieshape source
 			json.addProperty("DieshapeCutLayer", "cut-layer");
@@ -1370,15 +1456,23 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		
 		var scaling = s.getPropertyValue("Scaling", job);
 		if (scaling === "Yes") {
-			json.addProperty("ScalingH", "width");
-			json.addProperty("ScalingV", "height");
+			if(useProjectsAPI) {
+				json.startField("size");
+				json.startDict();
+				json.addProperty("ScalingH", "width");
+				json.addProperty("ScalingV", "height");
+				json.endDict();
+			} else {
+				json.addProperty("ScalingH", "width");
+				json.addProperty("ScalingV", "height");
+			}
 		}
 	
 		// Add autosnap properties
 		var autosnap = s.getPropertyValue("ProductAutosnap", job);
 		if (autosnap === "Autosnap with Ink") {
-			json.addProperty("AutosnapInk", "autosnap-ink");
-			json.addProperty("BackAutosnapInk", "back-autosnap-ink");
+			json.addProperty("AutosnapInk", useProjectsAPI ? "autosnap-color" : "autosnap-ink");
+			json.addProperty("BackAutosnapInk", useProjectsAPI ? "back-autosnap-color" : "back-autosnap-ink");
 		} else if (autosnap === "Autosnap with Layer") {
 			json.addProperty("AutosnapLayer", "autosnap-layer");
 			json.addProperty("BackAutosnapLayer", "back-autosnap-layer");
@@ -1392,44 +1486,96 @@ function addProduct(s : Switch, job : Job, id : String, status,
 
 	// Add spacing properties
 	var spacingType = s.getPropertyValue("ProductSpacingType", job);
-	if (spacingType === "Margins") {
-		json.add("spacing-type", "Margins");
-		json.addMargins("ProductSpacing", "spacing-margins");
-	} else if (spacingType === "Uniform") {
-		json.add("spacing-type", "Uniform");
-		json.addProperty("ProductSpacing", "spacing-margin");
+	if (useProjectsAPI) {
+		// Add spacing properties
+		json.startField("spacing");
+		json.startDict();
+		if (spacingType === "Margins") {
+			json.add("type", "Margins");
+			json.addMargins("ProductSpacing", "margins");
+		} else if (spacingType === "Uniform") {
+			json.add("type", "Uniform");
+			json.addProperty("ProductSpacing", "margin");
+		} else {
+			json.add("type", "Bleed")
+		}
+		json.endDict();
 	} else {
-		json.add("spacing-type", "Bleed");
+		if (spacingType === "Margins") {
+			json.add("spacing-type", "Margins");
+			json.addMargins("ProductSpacing", "spacing-margins");
+		} else if (spacingType === "Uniform") {
+			json.add("spacing-type", "Uniform");
+			json.addProperty("ProductSpacing", "spacing-margin");
+		} else {
+			json.add("spacing-type", "Bleed");
+		}
 	}
 
 	// Set bleed related properties
 	var bleedType = s.getPropertyValue("ProductBleedType", job);
-	if (bleedType === "Margins") {
-		json.add("bleed-type", "Margins");
-		json.addMargins("ProductBleed", "bleed-margins");
-	} else if (bleedType === "Contour") {
-		// Set bleed offset if not Default
-		var bleed = s.getPropertyValue("ProductBleed", job);
-		if (!isEmpty(bleed) && bleed !== "Default") {
-			json.add("bleed-type", "Contour");
-			json.add("bleed-margin", bleed);
+	if (useProjectsAPI) {
+		json.startField("bleed");
+		json.startDict();
+		if (spacingType === "Margins") {
+			json.add("type", "Margins");
+			json.addMargins("ProductBleed", "margins");
+		} else if (spacingType === "Contour") {
+			// Set bleed offset if not Default
+			var bleed = s.getPropertyValue("ProductBleed", job);
+			if (!isEmpty(bleed) && bleed !== "Default") {
+				json.add("type", "Contour");
+				json.add("margin", bleed);
+			}
+		} else if (bleedType === "None") {
+			json.add("type", "None")
 		}
-	} else if (bleedType === "None") {
-		json.add("bleed-type", "None");
+		json.endDict();
+	} else {
+		if (bleedType === "Margins") {
+			json.add("bleed-type", "Margins");
+			json.addMargins("ProductBleed", "bleed-margins");
+		} else if (bleedType === "Contour") {
+			// Set bleed offset if not Default
+			var bleed = s.getPropertyValue("ProductBleed", job);
+			if (!isEmpty(bleed) && bleed !== "Default") {
+				json.add("bleed-type", "Contour");
+				json.add("bleed-margin", bleed);
+			}
+		} else if (bleedType === "None") {
+			json.add("bleed-type", "None");
+		}
 	}
 
 	// Set offcut margins if needed
 	var offcut = s.getPropertyValue("Offcut", job);
 	if (offcut === "Margins") {
-		json.addMargins("Offcut", "offcut-margins");
+		if (useProjectsAPI) {
+			json.startField("offcut");
+			json.addMargins("Offcut", "margins");
+		} else {
+			json.addMargins("Offcut", "offcut-margins");
+		}
 	}
 
 	// Add rotation properties
 	var rotation = s.getPropertyValue("Rotation", job);
 	if (!isEmpty(rotation)) {
-		json.add("rotation", rotation);
-		if (rotation === "Custom") {
-			json.addProperty("ProductRotations", "allowed-rotations");
+		if (useProjectsAPI) {
+			json.startField("rotation");
+			json.startDict();
+			json.addProperty("ProductRotations", "rotation-type");
+			if (rotation === "Custom") {
+
+				json.addProperty("ProductRotations", "custom-values");
+
+			}
+			json.endDict();
+		} else {
+			json.add("rotation", rotation);
+			if (rotation === "Custom") {
+				json.addProperty("ProductRotations", "allowed-rotations");
+			}
 		}
 	}
 
@@ -1445,8 +1591,20 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	}
 
 	// Add front and back marks
-	json.addArrayProperty("Marks", "marks");
-	json.addArrayProperty("BackMarks", "back-marks");
+	var marks = s.getPropertyValue("Marks", job);
+	if (useProjectsAPI && !isEmpty(marks)) {
+		job.log(-1, "IN backMarks")
+		addMarks(s, job, json, "Marks", "marks");
+	} else if (!isEmpty(marks)) {
+		json.addArrayProperty("Marks", "marks");
+	}
+
+	var backMarks = s.getPropertyValue("BackMarks", job);
+	if (useProjectsAPI && !isEmpty(backMarks)) {
+		addMarks(s, job, json, "BackMarks", "back-marks");
+	} else if (!isEmpty(backMarks)) {
+		json.addArrayProperty("BackMarks", "back-marks");
+	}
 
 	// Set priority if needed
 	var priority = s.getPropertyValue("ProductPriority", job);
@@ -1455,12 +1613,15 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	}
 	
 	// Add custom properties which are defined as name=value pairs
-	addCustomProperties(json, "CustomProperties");
+	addCustomProperties(json, "CustomProperties", useProjectsAPI);
 
 	json.commit();
 
 	// Post add product request
-	var method = "jobs/" + id + "/products";
+	var method = useProjectsAPI ? "projects/" + id + "/products" : "jobs/" + id + "/products"
+	if (type === "Tiled" && useProjectsAPI) {
+		method += "/tiled";
+	}
 	var http = phoenixConnect(s, method, "application/json", "Entity");
 	// Allow 30 minutes to upload big files
 	http.timeOut = 1800;
@@ -1531,8 +1692,28 @@ function importCsv(s : Switch, job : Job, id : String, status) {
 	status.handleResponse(response, "Import CSV");
 }
 
+// Add mark options to add artwork JSON request entity for Projects API
+function addMarks(s : Switch, job : Job, json : Json, tagName: String, marks : String) {
+	markArray = multiValues(s, job, tagName)
+	json.startArray(marks);
+	for(var i=0; i < markArray.length; i++) {
+		var markId = libraryMarkId(s, markArray[i]);
+		json.startDict();
+		json.add("id", markId);
+		json.endDict()
+	}
+	json.endArray()
+}
+
 // Add tiling options to add artwork JSON request entity
 function addTiling(s : Switch, job : Job, json : Json) {
+	if(s.getPropertyValue("TilingPreset", job) !== null && s.getPropertyValue("TilingPreset", job) !== "") {
+		json.startField("tiling");
+		json.startDict();
+		json.add("id", libraryTilingPresetId(s));
+		json.endDict();
+		return;
+	}
 	// Get tiling methods in both directions
 	var hRule = s.getPropertyValue("TilingH", job);
 	var vRule = s.getPropertyValue("TilingV", job);
@@ -1637,7 +1818,7 @@ function addColors(json : Json, tagName: String, field: String) {
 	return true;
 }
 
-function addCustomProperties(json: Json, tagName: String) {
+function addCustomProperties(json: Json, tagName: String, useProjectsAPI: Boolean) {
 	// NOTE: The current format (PROP1=VAL1,PROP2=VAL2,...) is fairly easy to
 	// use but doesn't support non-text properties like numbers, dates, and
 	// lists.  In the future it might make sense to have a more advanced custom 
@@ -1663,8 +1844,12 @@ function addCustomProperties(json: Json, tagName: String) {
 				
 				// Add custom property entry which defaults to Text when type not set
 				json.startDict();
-				json.add("name", name);
-				json.add("value", value);
+				if (useProjectsAPI) {
+					json.add(name, value)
+				} else {
+					json.add("name", name);
+					json.add("value", value);
+				}
 				if (tagName == "ProjectCustomProperties") {
 					json.add("type", "String")
 				}
