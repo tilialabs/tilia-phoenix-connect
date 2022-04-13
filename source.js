@@ -1270,14 +1270,13 @@ function deletePhoenixJob(s : Switch, logger, id : String) {
 
 function addProduct(s : Switch, job : Job, id : String, status,
 					artworkState) {
-	
 	var useProjectsAPI = false;
 	job.log(-1, "Adding product to Phoenix job " + job.getName());
 
 	// Add product to job by building an add product request
 	var json = new Json(s, job);
 
-	if(s.getPropertyValue("TilingPreset",job) != null && s.getPropertyValue("TilingPreset",job) != "") {
+	if(s.getPropertyValue("TilingPreset",job) != null && s.getPropertyValue("TilingPreset",job) != "" && s.getPropertyValue("ProductType", job) == "Tiled") {
 		useProjectsAPI = true
 	}
 
@@ -1324,13 +1323,11 @@ function addProduct(s : Switch, job : Job, id : String, status,
 		json.addProperty("ProductMaxOverruns","end");
 		json.add("ProductMaxOverruns","end");
 		json.endDict();
-	}
-	else {
+	} else {
 		json.addProperty("ProductStock", "stock");
 		json.addProperty("ProductMinOverruns", "min-overruns", true);
 		json.addProperty("ProductMaxOverruns", "max-overruns", true);
 	}
-
 
 	// See what type of product we are adding
 	var type = s.getPropertyValue("ProductType", job);
@@ -1593,7 +1590,6 @@ function addProduct(s : Switch, job : Job, id : String, status,
 	// Add front and back marks
 	var marks = s.getPropertyValue("Marks", job);
 	if (useProjectsAPI && !isEmpty(marks)) {
-		job.log(-1, "IN backMarks")
 		addMarks(s, job, json, "Marks", "marks");
 	} else if (!isEmpty(marks)) {
 		json.addArrayProperty("Marks", "marks");
