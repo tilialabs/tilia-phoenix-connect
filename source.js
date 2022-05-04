@@ -141,6 +141,7 @@ var ExportActions = [
 var LibPropsToMethods = {
 	"Presses" : "libraries/things",
 	"ProductStock" : "libraries/stocks",
+	"CustomStockName" : "libraries/stocks",
 	"Templates" : "libraries/templates",
 	"ProductTemplates" : "libraries/templates",
 	"Marks" : "libraries/marks",
@@ -163,6 +164,11 @@ var LibPropsToMethods = {
 	"FoldingPattern": "libraries/folding",
 	"TilingPreset": "libraries/tiling"
 }
+
+// Store custom stock id, if used, to delete after project is finished
+var customStockId = "";
+var customGradeId = "";
+var customSheetId = "";
 
 // Per-layout and per-surface export postfix formats used to detect what
 // generated layout index a given export file corresponds to
@@ -440,7 +446,7 @@ function getLibraryForProperty(s : Switch, tag : String) {
 
 			}
 		}
-	} else if (tag === "StockGrade") {
+	} else if (tag === "StockGrade" || tag === "CustomStock") {
 		// For stock grade resolve product stock and get list of all grades in stock
 		var stockId = libraryStockId(s);
 		var grades = libraryGrades(s, stockId);
@@ -449,7 +455,7 @@ function getLibraryForProperty(s : Switch, tag : String) {
 				names.push(grades[i].name);
 			}
 		}
-	} else if (tag === "SelectedSheets" || tag === "SelectedRolls") {
+	} else if (tag === "SelectedSheets" || tag === "SelectedRolls" || tag === "CustomStockName") {
 		// Grab all stocks
 		var stocks = libraryItems(s, LibPropsToMethods["ProductStock"]);
 		if (stocks != null) {
@@ -1100,6 +1106,10 @@ function finishWork(s : Switch, job : Job, jobs : Array, id : String,
 
 	// Done with everything, delete job
 	deletePhoenixJob(s, job, id);
+	
+	if (s.getPropertyValue("CustomSheetSave") == "No") {
+		deletePhoenixSheet(s, job);
+	}
 
 	// If we have run into a process failure, mark trigger job as process failure
 	// leave all jobs in this nesting group untouched in the input folder
@@ -1259,12 +1269,201 @@ function queryJobAndCreate(s : Switch, job : Job, id : String,
 			job.log(1, "Opened Phoenix job " + id);
 		}
 	}
+	
+	var sheets = s.getPropertyValue("Sheets");
+	if (sheets == "Custom") {
+		customStockSize(s, job, status, id);
+	}
+}
+
+function customStockSize(s : Switch, job : Job, status, id : String) {
+	var stockName = s.getPropertyValue("CustomStockName");
+	var stockGradeWeight = s.getPropertyValue("CustomGradeWeight");
+	var stockGradeWeightUnit = s.getPropertyValue("CustomGradeWeightUnit");
+	var stockGradeWeightType = s.getPropertyValue("CustomGradeWeightType");
+	var stockGradeCaliper = s.getPropertyValue("CustomGradeCaliper");
+	var stockGradeCost = s.getPropertyValue("CustomGradeCost");
+	var stockGradeCostUnits = s.getPropertyValue("CustomGradeCostUnits");
+	var stockGradeDisplay = s.getPropertyValue("CustomGradeDisplay");	
+
+	var sheetHeight = s.getPropertyValue("CustomSheetHeight");
+	var sheetWidth = s.getPropertyValue("CustomSheetWidth");
+	var sheetCost = s.getPropertyValue("CustomSheetCost");
+	var sheetCostUnits = s.getPropertyValue("CustomSheetCostUnits");
+	var sheetGrain = s.getPropertyValue("CustomSheetGrain");
+	
+	var existingStock = false;
+	var existingGrade = false					
+	
+	// Check to see if stock and grade exist	
+	var stocks = libraryItems(s, LibPropsToMethods["ProductStock"]);
+	var stockId = null;
+	if (stocks != null) {		
+		for (var i = 0; i < stocks.length; ++i) {
+			if (stockName == stocks[i].name) {
+				existingStock = true;
+				stockId = stocks[i].id;
+				break;
+			}
+		}
+		var stockGradeName = ""
+		var gradeWeight = (stockGradeWeightUnit == "gsm") ? " " + stockGradeWeightUnit : "# " + stockGradeWeightType;
+		if (stockGradeDisplay == "Both") {
+			stockGradeName = stockGradeWeight + gradeWeight + " " + stockGradeCaliper;
+		} else if (stockGradeDisplay == "Weight") {
+			stockGradeName = stockGradeWeight + gradeWeight;
+		} else if (stockGradeDisplay == "Caliper") {
+			stockGradeName = stockGradeCaliper;
+		} else {
+			job.log(-1, "Error creating grade");
+		}
+
+			// Grab all grades for the given stock
+		if (stockId != null && stockGradeName != null) {
+			var grades = libraryGrades(s, stockId);
+			if (grades != null) {
+				for (var j = 0; j < grades.length; ++j) {	
+					if (stockGradeName == grades[j].name) {
+						existingGrade = true;
+						stockGradeDisplay = grades[j].grade-display;
+						stockGradeWeight = grades[j].weight;
+						stockGradeWeightUnit = grades[j].weight-units;
+						stockGradeCaliper = grades[j].caliper;
+						stockGradeCost = grades[j].cost;
+						stockGradeCostUnits = grades[j].cost-units;
+						var stockGradeId = grades[j].id;
+						break;
+					}
+				}
+			}
+		}
+	}
+	job.log(1, "2")
+	var method = "libraries/"		 
+	var json = new Json(s, job);
+				 
+	// Check various scenarios of stocks and grades already existing
+	// and build json for the necessary request to add what we need
+	if (existingStock && !existingGrade) {
+		// Case where stock exists, grade doesn't
+		method = method + "stocks/" + stockId + "/grades";
+	
+		json.add("grade-display", stockGradeDisplay);
+		json.add("weight", stockGradeWeight);
+		json.add("weight-units", stockGradeWeightUnit);
+		json.add("caliper", stockGradeCaliper);
+		json.add("cost", stockGradeCost);
+		json.add("cost-units", stockGradeCostUnits);
+		json.startArray("sheets");
+		json.startDict();
+		json.add("dimension1", sheetWidth);
+		json.add("dimension2", sheetHeight);
+		json.add("cost", sheetCost);
+		json.add("cost-units", sheetCostUnits);
+		json.add("grain",sheetGrain);
+		json.endDict();
+		json.endArray();
+		json.endDict();
+		json.endArray();
+		
+	} else	if (existingStock && existingGrade) {
+		// Case where stock and grade already exist
+		// Update method, build json
+		method = method + "/stocks/" + stockId + "/grades/" + stockGradeId + "/sheets";
+		
+		json.add("dimension1", sheetWidth);
+		json.add("dimension2", sheetHeight);
+		json.add("cost", sheetCost);
+		json.add("cost-units", sheetCostUnits);
+		json.add("grain",sheetGrain);
+		
+	} else {
+		// Case where neither stock nor grade exists
+		method = method + "v2/stocks"
+
+		json.add("name",stockName);
+		json.startArray("grades");
+		json.startDict();
+		json.add("grade-display", stockGradeDisplay);
+		json.add("weight", stockGradeWeight);
+		json.add("weight-units", stockGradeWeightUnit);
+		json.add("caliper", stockGradeCaliper);
+		json.add("cost", stockGradeCost);
+		json.add("cost-units", stockGradeCostUnits);
+		json.startArray("sheets");
+		json.startDict();
+		json.add("dimension1", sheetWidth);
+		json.add("dimension2", sheetHeight);
+		json.add("cost", sheetCost);
+		json.add("cost-units", sheetCostUnits);
+		json.add("grain",sheetGrain);
+		json.endDict();
+		json.endArray();
+		json.endDict();
+		json.endArray();
+	}
+
+	json.commit()	
+	
+	var http = phoenixConnect(s, method, "application/json", "Entity");
+	http.setAttachedFile(json.path());
+	response = post(s, job, http, "Create Sheet Size");
+	status.handleResponse(response, "Create Sheet Size");
+	if (status.success()) {
+		job.log(1, "Created custom sheet size " + sheetWidth + " x " + sheetHeight + " for project " + id);
+	}
+	
+	// If we're deleting the sheet at the end, we need to find the IDs
+	if (s.getPropertyValue("CustomSheetSave") == "No") {
+		// parse response to find and save created stock, grade, and sheet IDs
+		var responseJson;
+		if (typeof JSON !== "undefined") {
+			responseJson = JSON.parse(response);
+		} else {
+			responseJson = eval(response);
+		}
+		var responseSplit = responseJson.resources[0].split('/');
+		customStockId = responseSplit[responseSplit.length-1];
+	}
+					
+	return;
 }
 
 function deletePhoenixJob(s : Switch, logger, id : String) {
 	var method = "jobs/" + id;
 	var http = phoenixConnect(s, method, "application/json", "None");
 	var response = del(s, logger, http, "Delete Job");
+	return response != null;
+}
+
+function deletePhoenixSheet(s : Switch, logger) {
+	var method = "libraries/v2/stocks/" + customStockId;
+	var http = phoenixConnect(s, method, "application/json", "None");
+	var response = get(s, job, http, "Get Created Stock");
+	if (response == null) {
+		status.recordProcessFail("Getting plan results failed");
+		return;
+	}
+	job.log(1, "Storing Stock IDs");
+	// Convert JSON text into JS object
+	var results = eval(response);	
+	
+	customGradeId = results.grades.slice(-1)[0].id;	
+	customSheetId = results.grades.slice(-1)[0].sheets[0].id;	
+	
+	if (results.grade.length == 1) {
+		// Only one grade in stock, delete the entire stock
+		// Don't need to modify method URL, since it's already correct for stock deletion
+	} else if (results.grade.slice(-1)[0].sheets.length == 1) {
+		// Only one sheet in grade, remove entire grade
+		method = "libraries/stocks/" + customStockId + "/grades/" + customGradeId;
+	} else {
+		// Multiple sheets in grade, remove only the stock
+		method = "libraries/stocks/" + customStockId + "/grades/" + customGradeId + "/sheets/" + customSheetId;
+	}
+	
+	var http = phoenixConnect(s, method, "application/json", "None");
+	var response = del(s, logger, http, "Delete Custom Sheet");
 	return response != null;
 }
 
@@ -2129,6 +2328,32 @@ function post(s : Switch, logger, http : HTTP, action : String) {
 		http.post();
 		while (!http.waitForFinished(3)) {
 			logger.log(5, "Waiting for HTTP POST to finish", http.progress());
+		}
+
+		logger.log(-1, "POST done, status: " + http.getStatusCode());
+		if (http.finishedStatus == HTTP.Ok) {
+			// For post we will want to return the error message from Phoenix
+			// when concurrent limit exceeded and retry timeout also exceeded
+			if (!retryRequest(s, action, http, start, logger)) {
+				var bytes = http.getServerResponse();
+				return bytes.toString("UTF-8");
+			}
+		} else {
+			done = true;
+		}
+	}
+
+	return null;
+}
+
+function put(s : Switch, logger, http : HTTP, action : String) {
+	logger.log(-1, "Starting PUT to " + http.getUrl());
+	var start = new Date();
+	var done = false;
+	while (!done) {
+		http.put();
+		while (!http.waitForFinished(3)) {
+			logger.log(5, "Waiting for HTTP PUT to finish", http.progress());
 		}
 
 		logger.log(-1, "POST done, status: " + http.getStatusCode());
