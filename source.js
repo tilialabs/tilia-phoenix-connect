@@ -1524,15 +1524,15 @@ function deletePhoenixJob(s : Switch, logger, id : String) {
 	return response != null;
 }
 
-function deletePhoenixSheet(s : Switch, logger) {
+function deletePhoenixSheet(s : Switch, job) {
 	var method = "libraries/v2/stocks/" + customStockId;
 	var http = phoenixConnect(s, method, "application/json", "None");
-	var response = get(s, logger, http, "Get Created Stock");
+	var response = get(s, job, http, "Get Created Stock");
 	if (response == null) {
-		status.recordProcessFail("Getting plan results failed");
+		status.recordProcessFail("Getting created stock failed");
 		return;
 	}
-	job.log(1, "Storing Stock IDs");
+	job.log(1, "Storing Stock ID");
 	// Convert JSON text into JS object
 	var results = eval(response);	
 	
@@ -1551,7 +1551,7 @@ function deletePhoenixSheet(s : Switch, logger) {
 	}
 	
 	var http = phoenixConnect(s, method, "application/json", "None");
-	var response = del(s, logger, http, "Delete Custom Sheet");
+	var response = del(s, job, http, "Delete Custom Sheet");
 	if (response == null) {
 		status.recordProcessFail("Deleting Sheet failed");
 		return;
