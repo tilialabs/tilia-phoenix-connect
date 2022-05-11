@@ -170,6 +170,7 @@ var LibPropsToMethods = {
 var customStockId = "";
 var customGradeId = "";
 var customSheetId = "";
+var customRollId = "";
 
 // Per-layout and per-surface export postfix formats used to detect what
 // generated layout index a given export file corresponds to
@@ -1341,7 +1342,6 @@ function customStockSize(s : Switch, job : Job, status, id : String) {
 		json.startDict();
 		json.add("id", stock["stock-type"].id);
 		json.endDict();
-//		json.add("vendor", stock.vendor);
 	}
 
 	json.startArray("grades");
@@ -1369,8 +1369,8 @@ function customStockSize(s : Switch, job : Job, status, id : String) {
 					json.add("cost-units", grades[i]['cost-units']);
 		  			json.add("any-sheet-size", grades[i]['any-sheet-size'].toString());
 					if (grades[i].sheets.length > 0) {
+						json.startArray("sheets");
 						for (var j = 0; j < grades[i].sheets.length; j++) {
-							json.startArray("sheets");
 							json.startDict();
 							json.add("description", grades[i].sheets[j].description);
 							json.add("dimension1", grades[i].sheets[j].dimension1);
@@ -1379,21 +1379,27 @@ function customStockSize(s : Switch, job : Job, status, id : String) {
 							json.add("dimension2", grades[i].sheets[j].dimension2);
 							json.add("grain" ,grades[i].sheets[j].grain);
 							json.endDict();
-							json.endArray();
+							if (j + 1 < grades[i].sheets.length) {
+								json.addArraySeparator();
+							}
 						}
+						json.endArray();
 					}
 					if (grades[i].rolls.length > 0) {
-						for (var j = 0; j < grades[i].sheets.length; j++) {
-							json.startArray("rolls");
+						json.startArray("rolls");
+						for (var j = 0; j < grades[i].rolls.length; j++) {
 							json.startDict();
 							json.add("description", grades[i].rolls[j].description);
-							json.add("width", grades[i].rolls[j].dimension1);
+							json.add("dimension1", grades[i].rolls[j].dimension1);
 							json.add("cost", grades[i].rolls[j].cost.toString());
 							json.add("cost-units", grades[i].rolls[j]['cost-units']);
 							json.add("grain" ,grades[i].rolls[j].grain);
 							json.endDict();
-							json.endArray();
+							if (j + 1 < grades[i].rolls.length) {
+								json.addArraySeparator();
+							}
 						}
+						json.endArray();						
 					}
 					json.endDict();
 					json.addArraySeparator();
@@ -1417,14 +1423,11 @@ function customStockSize(s : Switch, job : Job, status, id : String) {
 			for (var i = 0; i < existingGradeSheets.length; i++) {
 				json.startDict();
 				json.add("description", existingGradeSheets[i].description);
-//				json.add("notes", existingGradeSheets[i].notes);
-//				json.add("external-id", existingGradeSheets[i]['external-id']);
 				json.add("dimension1", existingGradeSheets[i].dimension1);
 				json.add("cost", existingGradeSheets[i].cost.toString());
 				json.add("cost-units", existingGradeSheets[i]['cost-units']);
 				json.add("dimension2", existingGradeSheets[i].dimension2);
-				json.add("grain" , existingGradeSheets[i].grain);
-//				json.add("type", existingGradeSheets[i].type);															
+				json.add("grain" , existingGradeSheets[i].grain);														
 				json.endDict();
 				if (customStockType == "Sheet" || i + 1 < existingGradeSheets.length) {
 					json.addArraySeparator();
@@ -1441,24 +1444,19 @@ function customStockSize(s : Switch, job : Job, status, id : String) {
 		json.add("cost-units", sheetCostUnits);
 		json.add("grain",sheetGrain);
 		json.endDict();
-		json.endArray();
-		json.endDict();
-		json.endArray();
 	} 
 	json.endArray();
+
 	json.startArray("rolls");
 	if (existingGradeRolls != null) {
 		if (existingGradeRolls.length > 0) {
 			for (var i = 0; i < existingGradeRolls.length; i++) {
 				json.startDict();
 				json.add("description", existingGradeRolls[i].description);
-//				json.add("notes", existingGradeRolls[i].notes);
-//				json.add("external-id", existingGradeRolls[i]['external-id']);
 				json.add("dimension1", existingGradeRolls[i].dimension1);
 				json.add("cost", existingGradeRolls[i].cost.toString());
 				json.add("cost-units", existingGradeRolls[i]['cost-units']);
-				json.add("grain" , existingGradeRolls[i].grain);
-//				json.add("type", existingGradeRolls[i].type);															
+				json.add("grain" , existingGradeRolls[i].grain);														
 				json.endDict();
 				if (customStockType == "Roll" || i + 1 < existingGradeRolls.length) {
 					json.addArraySeparator();
@@ -1475,10 +1473,12 @@ function customStockSize(s : Switch, job : Job, status, id : String) {
 		json.add("cost-units", sheetCostUnits);
 		json.add("grain",sheetGrain);
 		json.endDict();
-		json.endArray();
-		json.endDict();
 	}
 	json.endArray();
+
+	json.endDict();
+	json.endArray();
+
 	
 	json.commit();
 
@@ -1532,22 +1532,36 @@ function deletePhoenixSheet(s : Switch, job) {
 		status.recordProcessFail("Getting created stock failed");
 		return;
 	}
-	job.log(1, "Storing Stock ID");
+
 	// Convert JSON text into JS object
-	var results = eval(response);	
+	var responseJson;
+	if (typeof JSON !== "undefined") {
+		responseJson = JSON.parse(response);
+	} else {
+		responseJson = eval(response);
+	}	
 	
-	customGradeId = results.grades.slice(-1)[0].id;	
-	customSheetId = results.grades.slice(-1)[0].sheets[0].id;	
+	var grade = responseJson.grades[responseJson.grades.length-1];
 	
-	if (results.grade.length == 1) {
+	customGradeId = grade.id;	
+		
+	if (responseJson.grades.length == 1 && (grade.sheets.length + grade.rolls.length < 2)) {
+		job.log(1, "Deleting Stock");
 		// Only one grade in stock, delete the entire stock
 		// Don't need to modify method URL, since it's already correct for stock deletion
-	} else if (results.grade.slice(-1)[0].sheets.length == 1) {
+	} else if (grade.sheets.length + grade.rolls.length < 2) {
+		job.log(1, "Deleting Grade");
 		// Only one sheet in grade, remove entire grade
 		method = "libraries/stocks/" + customStockId + "/grades/" + customGradeId;
-	} else {
-		// Multiple sheets in grade, remove only the stock
+	} else if (s.getPropertyValue("CustomStockType") == "Sheet") {
+		// Multiple sheets in grade, remove only the sheet or roll
+		job.log(1, "Deleting Sheet");
+		customSheetId = grade.sheets[grade.sheets.length-1].id;
 		method = "libraries/stocks/" + customStockId + "/grades/" + customGradeId + "/sheets/" + customSheetId;
+	} else if (s.getPropertyValue("CustomStockType") == "Roll") {
+		job.log(1, "Deleting Roll");
+		customRollId = grade.rolls[grade.rolls.length-1].id;
+		method = "libraries/stocks/" + customStockId + "/grades/" + customGradeId + "/rolls/" + customRollId;	
 	}
 	
 	var http = phoenixConnect(s, method, "application/json", "None");
