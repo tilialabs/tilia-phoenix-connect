@@ -1109,7 +1109,7 @@ function finishWork(s : Switch, job : Job, jobs : Array, id : String,
 	// Done with everything, delete job
 	deletePhoenixJob(s, job, id);
 	
-	if (s.getPropertyValue("CustomSheetSave") == "No") {
+	if (s.getPropertyValue("CustomSheetSave") == "No" && s.getPropertyValue("Stock") == "New") {
 		deletePhoenixSheet(s, job);
 	}
 
@@ -1315,7 +1315,7 @@ function customStockSize(s : Switch, job : Job, status, id : String) {
 			if (stockName == stocks[i].name) {
 				existingStock = true;
 				stock = stocks[i];
-				grades = stocks[i].grades
+				grades = stocks[i].grades;
 				stockId = stock.id;
 				break;
 			}
@@ -1350,9 +1350,14 @@ function customStockSize(s : Switch, job : Job, status, id : String) {
 			for (var i = 0; i < grades.length; i++) {	
 				if (stockGradeName == grades[i].name) {
 					stockGradeDisplay = grades[i]['grade-display'];
-					stockGradeWeight = grades[i].weight;
-					stockGradeWeightUnit = grades[i]['weight-units'];
-					stockGradeCaliper = grades[i].caliper;
+					if (typeof grades[i].weight !== 'undefined') {
+						stockGradeWeight = grades[i].weight;
+						stockGradeWeightUnit = grades[i]['weight-units'];
+						stockGradeWeightType = grades[i]['weight-type'];
+					}
+					if (typeof grades[i].caliper !== 'undefined') {
+						stockGradeCaliper = grades[i].caliper;
+					}
 					stockGradeCost = grades[i].cost;
 					stockGradeCostUnits = grades[i]['cost-units'];
 					existingGradeSheets = grades[i].sheets;
@@ -1361,10 +1366,14 @@ function customStockSize(s : Switch, job : Job, status, id : String) {
 				} else {
 					json.startDict();
 					json.add("grade-display", grades[i]['grade-display']);
-					json.add("weight", grades[i].weight.toString());
-					json.add("weight-units", grades[i]['weight-units']);	
-					json.add("weight-type", grades[i]['weight-type']);
-					json.add("caliper", grades[i].caliper);
+					if (typeof grades[i].weight !== 'undefined') {
+						json.add("weight", grades[i].weight.toString());
+						json.add("weight-units", grades[i]['weight-units']);	
+						json.add("weight-type", grades[i]['weight-type']);
+					}
+					if (typeof grades[i].caliper !== 'undefined') {
+						json.add("caliper", grades[i].caliper);
+					}
 					json.add("cost", grades[i].cost.toString());
 					json.add("cost-units", grades[i]['cost-units']);
 		  			json.add("any-sheet-size", grades[i]['any-sheet-size'].toString());
