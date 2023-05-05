@@ -16,3 +16,6 @@ Thumbs.db
 
 # Ignore local copy repo script
 copy-over.sh
+
+# Ignore .enfpack
+*.enfpack
