@@ -952,12 +952,12 @@ function collectPlacedItems(report, job) {
 	var placed = {};
 	// Logic to support both products and products2 element depending on whether Phoenix 
 	// is running the Switch Connector or REST Service. REST Service uses products v2
-	var items = childElement(doc.getDocumentElement(), "products") ? childElement(doc.getDocumentElement(), "products") : childElement(doc.getDocumentElement(), "products2");
+	var items = childElement(doc.getDocumentElement(), "products", false) ? childElement(doc.getDocumentElement(), "products", false) : childElement(doc.getDocumentElement(), "products2", false);
 	if (items != null) {
 		var children = items.getChildNodes();
 		for (var i = 0; i < children.getCount(); i++) {
 			var item = children.at(i);
-			var index = childElement(item, "name");
+			var index = childElement(item, "name", false);
 			if (index != null) {
 				var text = index.getFirstChild();
 				if (text != null) {
@@ -991,14 +991,14 @@ function createLayoutReport(report, layout, job) {
 	var root = doc.getDocumentElement();
 	var edited = false;
 
-	var layouts = childElement(root, "layouts");
+	var layouts = childElement(root, "layouts", false);
 	if (layouts != null) {
 		var toRemove = [];
 		var children = layouts.getChildNodes();
 
 		for (var i = 0; i < children.getCount(); i++) {
 			var child = children.at(i);
-			var index = childElement(child, "index");
+			var index = childElement(child, "index", false);
 			if (index != null) {
 				var contents = index.getFirstChild();
 				if (contents != null) {
@@ -1024,7 +1024,7 @@ function createLayoutReport(report, layout, job) {
 
 	// Remove products that are not placed into this layout
 	if (edited) {
-		var products = childElement(root, "products") ? childElement(root, "products") : childElement(root, "products2");
+		var products = childElement(root, "products", false) ? childElement(root, "products", false) : childElement(root, "products2", false);
 			if (products != null) {
 			var toRemove = [];
 			var children = products.getChildNodes();
@@ -1060,7 +1060,7 @@ function createLayoutReport(report, layout, job) {
 
 // Sharing: Griffin(100%)
 function itemInLayout(item, layout, job) {
-	var layouts = childElement(item, "layouts");
+	var layouts = childElement(item, "layouts", true);
 	var inLayout = false;
 
 	if (layouts != null) {
@@ -1082,17 +1082,11 @@ function itemInLayout(item, layout, job) {
 }
 
 // Sharing: Griffin(100%)
-function childElement(element, name) {
-	var children = element.getChildNodes();
-
-	for (var i = 0; i < children.getCount(); i++) {
-		var child = children.at(i);
-		if (child.getBaseName() === name) {
-			return child;
-		}
-	}
-
-	return null;
+function childElement(element, name, recursive) {
+	var selectExpression = "./" + (recursive ? "/" : "");
+	var children = element.evalToNode(selectExpression + name);
+	
+	return (children !== undefined) ? children : null;
 }
 
 function finishWork(s : Switch, job : Job, jobs : Array, id : String,
