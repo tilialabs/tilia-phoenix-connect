@@ -1,6 +1,6 @@
-# tilia Phoenix Connect
+# Phoenix2Switch
 
-tilia Phoenix Connect is a free, open source app for Enfocus Switch available on the Enfocus Appstore:
+Phoenix2Switch is a free, open source app for Enfocus Switch available on the Enfocus Appstore:
 https://www.enfocus.com/en/appstore/product/tilia-phoenix-connect
 
 This app provides seamless connectivity between Enfocus Switch and the award winning tilia Phoenix with over 150 dynamic properties controlling virtually all facets of bound, folded, tiled, nested, and die-based imposition, eliminating the need to build pre-defined templates.  
@@ -16,21 +16,21 @@ A total of 13 export formats are supported to drive your press and finishing dev
 - Tiling reports
 - Phoenix project files
 
-tilia Phoenix and tilia Phoenix Connect are developed by [Tilia Labs](https://tilialabs.com).
+Phoenix and Phoenix2Switch are developed by [Esko](https://esko.com) and [Enfocus](https://enfocus.com) respectively.
 
 ## Prerequisites
 
 To run this app, you will need:
-1. A licensed copy of tilia Phoenix 7.0 or newer with the Automate module
+1. A licensed copy of Phoenix 7.0 or newer with the Automate module
 2. A licensed copy of Enfocus Switch 2017 update 1 or newer
 
 In order to make modifications to this script and use it with your Switch you will need to obtain the Switch Scripting Module from Enfocus. The module will also enable the SwitchScripter application, used to create, modify and debug scripts.
 
 ## Running the app
 
-You can run the app directly in your Switch flows by using the Script element and selecting the tilia-phoenix-connect.sscript file from this repository.  tilia Phoenix also needs to be running with "Switch Connector" automation endpoint started.
+You can run the app directly in your Switch flows by using the Script element and selecting the tilia-phoenix-connect.sscript file from this repository.  Phoenix also needs to be running with "Switch Connector" automation endpoint started.
 
-For more information on how to run tilia Phoenix in automated environments including Switch please visit https://docs.tilialabs.com/
+For more information on how to run Phoenix in automated environments including Switch please visit https://docs.esko.com/docs/en-us/phoenix/24.03/userguide/home.html#about.html
 
 ## Open source
 
@@ -46,9 +46,9 @@ Any coding contributions must follow these rules in order to be accepted:
 1. We ask that all development preserve the existing coding style in source.js.
 1. Any non-obvious code changes require clear comments.
 
-## tilia Phoenix
+## Phoenix
 
-Built from the ground up to cut costs, tilia Phoenix is a sophisticated true-AI planning and imposition application that has been boosting efficiencies for print service providers across all segments, from packaging, labels, commercial, corrugated, and wide format printing.
+Built from the ground up to cut costs, Phoenix is a sophisticated true-AI planning and imposition application that has been boosting efficiencies for print service providers across all segments, from packaging, labels, commercial, corrugated, and wide format printing.
 
 **Precise, Dynamic Imposition**
 
@@ -56,4 +56,4 @@ Phoenix Imposition AI takes an entirely different approach to common imposition 
 
 **Tight Integration**
 
-Uniting planning and prepress functions, tilia Phoenix can be integrated into your chosen workflow or MIS system to enable fast accurate estimates, shrink prepress time, automate error-prone tasks, maximize media usage, and reduce postpress complexity.
+Uniting planning and prepress functions, Phoenix can be integrated into your chosen workflow or MIS system to enable fast accurate estimates, shrink prepress time, automate error-prone tasks, maximize media usage, and reduce postpress complexity.

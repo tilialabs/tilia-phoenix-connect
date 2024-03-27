@@ -2,10 +2,10 @@
 <Object>
     <ElementFields>
         <Name Editor="hide" Type="string">PhoenixConnect</Name>
-        <DisplayName Editor="hide" Type="string">tilia Phoenix Connect</DisplayName>
-        <Version Editor="hide" Type="number">4</Version>
+        <DisplayName Editor="hide" Type="string">Phoenix2Switch</DisplayName>
+        <Version Editor="hide" Type="string">5</Version>
         <Keywords Editor="hide" Type="string">Planning,Imposition,Estimating,Wide Format,Packaging,Labels,Commercial,Bound,Books,Tiling,Tile Reports,Saddle Stitch,N-up,Creep,Smyth Sewn,Section Stitch,Folding Patterns,Die,Templates,Web,Offset,Ganging,JDF,CF2,DXF</Keywords>
-        <Tooltip Editor="hide" Type="string">tilia Phoenix Connect app</Tooltip>
+        <Tooltip Editor="hide" Type="string">Phoenix2Switch</Tooltip>
         <IncomingConnections Editor="hide" RequireAtLeastOne="Yes">Yes</IncomingConnections>
         <OutgoingConnections DetailedInfo="" Editor="hide" RequireAtLeastOne="Yes">Unlimited</OutgoingConnections>
         <ConnectionType Editor="hide">Move</ConnectionType>
@@ -22,14 +22,16 @@
 &lt;/ValueDescription&gt;
 </SubcategoryInElementPane>
         <DispositionInElementPane Editor="hide" Type="number"/>
-        <Description Editor="hide" Type="string">tilia Phoenix configurator provides a comprehensive interface to the powerful Phoenix Imposition AI tools for creating cost-optimized, print-ready layouts and generating outputs for printing, cutting, and reporting.
+        <Description Editor="hide" Type="string">Phoenix2Switchprovides a comprehensive interface to the powerful Phoenix Imposition AI tools for creating cost-optimized, print-ready layouts and generating outputs for printing, cutting, and reporting.
 
-With several dynamic properties controlling imposition behavior, a single tilia Phoenix flow element can adapt to a wide range of different work types, press, and post-press constraints, eliminating the need to manually create hundreds of templates for every scenario.
+With several dynamic properties controlling imposition behavior, a single Phoenix flow element can adapt to a wide range of different work types, press, and post-press constraints, eliminating the need to manually create hundreds of templates for every scenario.
 
-Concurrency is supported and multiple instances can be run within a single flow or across flows.  Build 6.0</Description>
+Concurrency is supported and multiple instances can be run within a single flow or across flows.  Build 7.0</Description>
         <Compatibility Editor="hide" Type="string">Phoenix 7.0 and above</Compatibility>
         <SupportInfo Editor="hide" Type="string">support@tilialabs.com</SupportInfo>
         <AppDiscovery Editor="hide" Type="string">tilia Phoenix Connect requires Phoenix 7.0 or above to be running on the same computer as Switch server on on a network accessible computer in &quot;Remote&quot; location mode.  Additionally, the Switch Connector needs to be started in Phoenix from the Automate panel.</AppDiscovery>
+        <FlowUpgradeWarning Editor="hide" Type="string"/>
+        <UpgradeMaximumVersion Editor="hide" Type="number"/>
         <Connections Editor="hide" Type="string">Any number of outgoing connections can be defined to generate plan output as a Phoenix Job, imposed PDF, imposed JDF, XML/PDF report, or PDF die layout.  Additionally, input jobs can be copied to outgoing connections on error, success, or always.</Connections>
         <SwitchModule Editor="hide" Type="string"/>
         <ObsoleteProperties Editor="hide" Type="string"/>
